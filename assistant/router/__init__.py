@@ -1,6 +1,16 @@
+"""
+Router package entrypoint.
+
+Exposes route() for runtime and safely ignores runtime-only kwargs.
+"""
 from __future__ import annotations
 
-from assistant.router.core import route_text
-from assistant.router.types import RouteResult
+from .text_driver import route_text
 
-__all__ = ["route_text", "RouteResult"]
+
+def route(raw: str, **kwargs):
+    kwargs.pop("is_awake", None)
+    return route_text(raw, **kwargs)
+
+
+__all__ = ["route"]
