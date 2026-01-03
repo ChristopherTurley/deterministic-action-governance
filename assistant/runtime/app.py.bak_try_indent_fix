@@ -40,17 +40,15 @@ except Exception:
     configure_sounddevice = None  # type: ignore
 
 from assistant.web.web_lookup import search_duckduckgo, spoken_compact, summarize
+from assistant.config import DEMO_MODE
 
-def _looks_like_task_list(raw: str) -> bool:
-    t = (raw or "").lower()
-    if "i need to " in t:
-        return True
-    # multiple tasks often show up as commas or 'and' lists
-    if t.count(",") >= 1:
-        return True
-    if " and " in t and ("finish " in t or "outline " in t or "walk " in t or "call " in t):
-        return True
-    return False
+def _clean_read(text: str, max_sentences: int = 3) -> str:
+    t = (text or "").replace("\n", " ").strip()
+    if not t:
+        return ""
+    parts = [p.strip() for p in t.split(".") if p.strip()]
+    parts = parts[:max_sentences]
+    return ". ".join(parts).rstrip(".") + "."
 
 # --- Wake filtering helpers (added) ---
 def _norm_text(t: str) -> str:
@@ -474,32 +472,50 @@ class VeraApp:
             # Reminders tick before listening
             self._tick_reminders()
 
-            print("[STAGE] LISTEN")
+            if not DEMO_MODE:
+                print("[STAGE] LISTEN")
             raw = (self.listener.listen() or "").strip()
 
 
+            
+
+            # Demo: handle 'open 1/2/3' by opening last web results
+            low = (raw or "").strip().lower()
+            if low.startswith("open "):
+                try:
+                    n = int(low.split()[1])
+                    prof = Path("assistant/profiles/last_web_results.json")
+                    if prof.exists():
+                        urls = json.loads(prof.read_text())
+                        if 1 <= n <= len(urls):
+                            webbrowser.open(urls[n - 1])
+                            print("VERA: Opening result " + str(n) + ".")
+                            self.speak("Opening result " + str(n) + ".")
+                            raw = ""
+                except Exception:
+                    pass
             # --- Wake gate tuning: silently ignore background audio/lyrics ---
-            # Do not respond or route when wake is required and wake phrase is missing.
-            if getattr(self, 'wake_required', True) and raw:
-                if not _is_strict_wake(raw):
-                    raw = ''
+            # Allow natural follow-ups if we're awaiting input (e.g., "walk Moose at 5pm").
+            awaiting = False
+            try:
+            st = getattr(self, "store", None)
+            st_state = getattr(st, "state", None)
+            if st_state is not None:
+                for k in ["awaiting_time_for_task", "awaiting_followup", "expecting_followup", "pending_question"]:
+                    if getattr(st_state, k, None):
+                        awaiting = True
+                        break
+            except Exception:
+            awaiting = False
+
+            if getattr(self, "wake_required", True) and raw and not awaiting:
+            if not _is_strict_wake(raw):
+                raw = ""
             # --- End wake gate tuning ---
             if not raw:
                 continue
             print(f"[RAW] {raw}")
             print(f"USER: {raw}")
-
-            
-            # VC demo polish: accept task intake even outside 'start my day'
-            # If it looks like a task list, route it as task intake instead of rejecting.
-            if _looks_like_task_list(raw):
-                try:
-                    # Prefer existing task intake handler if present
-                    out = (self.process_one(raw) or "").strip()
-                    if out:
-                        pass
-                except Exception:
-                    pass
 
             out = (self.process_one(raw) or "").strip()
             if out:
