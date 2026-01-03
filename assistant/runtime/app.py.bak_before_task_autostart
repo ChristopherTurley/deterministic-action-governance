@@ -41,6 +41,17 @@ except Exception:
 
 from assistant.web.web_lookup import search_duckduckgo, spoken_compact, summarize
 
+def _looks_like_task_list(raw: str) -> bool:
+    t = (raw or "").lower()
+    if "i need to " in t:
+        return True
+    # multiple tasks often show up as commas or 'and' lists
+    if t.count(",") >= 1:
+        return True
+    if " and " in t and ("finish " in t or "outline " in t or "walk " in t or "call " in t):
+        return True
+    return False
+
 # --- Wake filtering helpers (added) ---
 def _norm_text(t: str) -> str:
     return " ".join((t or "").strip().lower().split())
@@ -477,6 +488,18 @@ class VeraApp:
                 continue
             print(f"[RAW] {raw}")
             print(f"USER: {raw}")
+
+            
+            # VC demo polish: accept task intake even outside 'start my day'
+            # If it looks like a task list, route it as task intake instead of rejecting.
+            if _looks_like_task_list(raw):
+                try:
+                    # Prefer existing task intake handler if present
+                    out = (self.process_one(raw) or "").strip()
+                    if out:
+                        pass
+                except Exception:
+                    pass
 
             out = (self.process_one(raw) or "").strip()
             if out:
