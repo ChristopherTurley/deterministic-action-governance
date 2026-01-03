@@ -1,0 +1,306 @@
+from __future__ import annotations
+
+import inspect
+import importlib
+from dataclasses import dataclass
+from datetime import datetime
+
+from assistant.router import route_text
+from assistant.state.store import StateStore
+from assistant.voice.speaker import Speaker
+
+
+def _now_str() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _log(msg: str) -> None:
+    print(f"[{_now_str()}] {msg}")
+
+
+@dataclass
+class VeraConfig:
+    wake_required: bool = True
+    priority_enabled: bool = True
+
+
+class VeraApp:
+    def __init__(self, wake_required: bool = True, priority_enabled: bool = True) -> None:
+        self.cfg = VeraConfig(wake_required=wake_required, priority_enabled=priority_enabled)
+        self.store = StateStore()
+        self.speaker = Speaker()
+        self.listener = self._build_listener()
+
+        # Web lookup phrasing control
+        self._last_web_query: str | None = None
+        self._last_web_count: int = 0
+
+    # ---------------------------
+    # AUDIO OUTPUT
+    # ---------------------------
+    def speak(self, text: str) -> None:
+        text = (text or "").strip()
+        if not text:
+            return
+
+        _log(f"VERA: {text}")
+        try:
+            # confirmed earlier: Speaker has .say()
+            self.speaker.say(text)  # type: ignore[attr-defined]
+        except Exception as e:
+            _log(f"[AUDIO] speak() failed: {e}")
+
+    # ---------------------------
+    # LISTENER (dynamic discovery)
+    # ---------------------------
+    def _build_listener(self):
+        """
+        We do NOT assume the class is named 'Listener'.
+        We import assistant.voice.listener and search for a class that:
+          - is a class
+          - has a .listen method
+        If that class needs one required arg (stt), we build stt from env and pass it.
+        """
+        try:
+            mod = importlib.import_module("assistant.voice.listener")
+
+            # Prefer common class names first if present
+            preferred_names = ["Listener", "VeraListener", "VoiceListener", "MicListener"]
+            candidates = []
+
+            for name in preferred_names:
+                obj = getattr(mod, name, None)
+                if inspect.isclass(obj) and hasattr(obj, "listen"):
+                    candidates.append(obj)
+
+            # Otherwise, scan all module members
+            if not candidates:
+                for _, obj in inspect.getmembers(mod):
+                    if inspect.isclass(obj) and hasattr(obj, "listen"):
+                        candidates.append(obj)
+
+            if not candidates:
+                _log("[WARN] No listener class with .listen() found in assistant.voice.listener; using text input.")
+                return None
+
+            ListenerCls = candidates[0]
+
+            # Figure out required args for __init__
+            try:
+                sig = inspect.signature(ListenerCls.__init__)
+                params = [
+                    p for p in sig.parameters.values()
+                    if p.name != "self"
+                    and p.default is inspect._empty
+                    and p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+                ]
+
+                if len(params) == 0:
+                    return ListenerCls()
+
+                if len(params) == 1:
+                    from assistant.audio.stt import build_stt_from_env  # type: ignore
+                    stt = build_stt_from_env()
+                    return ListenerCls(stt)
+
+                _log(f"[WARN] Listener {ListenerCls.__name__} requires {len(params)} args; using text input.")
+                return None
+
+            except Exception as e:
+                _log(f"[WARN] Could not inspect Listener init ({e}); attempting no-arg.")
+                try:
+                    return ListenerCls()
+                except Exception:
+                    return None
+
+        except Exception as e:
+            _log(f"[WARN] Failed to import assistant.voice.listener ({e}); using text input.")
+            return None
+
+    def listen(self) -> str:
+        if self.listener is None:
+            return input("> ").strip()
+
+        try:
+            out = self.listener.listen()
+            return (out or "").strip()
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            _log(f"[WARN] listen() failed ({e}); switching to text input for this turn.")
+            try:
+                return input("> ").strip()
+            except Exception:
+                return ""
+
+    # ---------------------------
+    # ROUTE HANDLERS
+    # ---------------------------
+    def _handle_spotify(self, cmd: str, query: str | None = None) -> None:
+        try:
+            if cmd == "liked":
+                from assistant.integrations.spotify_control import spotify_play_liked_from_top  # type: ignore
+                spotify_play_liked_from_top()
+                self.speak("Playing your Liked Songs.")
+                return
+        except Exception:
+            pass
+
+        try:
+            import assistant.tools.spotify as sp  # type: ignore
+
+            if cmd == "pause":
+                sp.pause()
+                self.speak("Paused.")
+                return
+            if cmd in ("resume", "play"):
+                if query:
+                    sp.play(query)
+                    self.speak(f"Playing: {query}.")
+                else:
+                    sp.play()
+                    self.speak("Playing.")
+                return
+            if cmd == "liked":
+                sp.liked_songs()
+                self.speak("Playing your Liked Songs.")
+                return
+            if cmd in ("next", "skip"):
+                sp.next_track()
+                self.speak("Next.")
+                return
+            if cmd in ("previous", "prev"):
+                sp.previous_track()
+                self.speak("Previous.")
+                return
+
+            self.speak("Spotify command not recognized.")
+            return
+
+        except Exception:
+            self.speak("Spotify integration is not available.")
+            return
+
+    def _web_lookup_phrase(self, query: str) -> str:
+        q = (query or "").strip().lower()
+        if not q:
+            return "Looking that up for you."
+
+        if self._last_web_query == q:
+            self._last_web_count += 1
+        else:
+            self._last_web_query = q
+            self._last_web_count = 1
+
+        if self._last_web_count >= 2:
+            return "Still looking that up for you."
+        return "Looking that up for you."
+
+    def process_one(self, raw: str) -> None:
+        raw = (raw or "").strip()
+        if not raw:
+            return
+
+        _log("[RAW] " + raw)
+        _log("USER: " + raw)
+
+        r = route_text(
+            raw,
+            wake_required=self.cfg.wake_required,
+            priority_enabled=self.cfg.priority_enabled,
+            awake=self.store.state.awake,
+        )
+
+        kind = getattr(r, "kind", "LLM_FALLBACK")
+        meta = getattr(r, "meta", {}) or {}
+
+        if kind == "NUDGE_WAKE":
+            self.speak("Say 'Hey Vera' first, then ask your question.")
+            return
+
+        if kind == "ASLEEP_IGNORE":
+            return
+
+        if kind == "WAKE":
+            self.store.wake()
+            self.speak("I’m awake.")
+            return
+
+        if kind == "SLEEP":
+            self.store.sleep()
+            self.speak("Going to sleep. Say 'Hey Vera' to wake me.")
+            return
+
+        if kind == "MISSION":
+            self.speak(
+                "I'm VERA, a Voice-Enabled Reasoning Assistant. I provide real time dynamic analysis and proactive guidance tailored to your immediate context. "
+                "By understanding your voice, screen, and schedule, i ensure you stay focused, organized, and on time throughout your day. Effectively serving as your personal secretary."
+            )
+            return
+
+        if kind == "TIME":
+            self.speak(f"It’s {datetime.now().strftime('%-I:%M %p')}.")
+            return
+
+        if kind == "START_DAY":
+            self.speak("Alright. Give me your top priority and your first deadline.")
+            return
+
+        if kind == "PRIORITY_SET":
+            value = (meta.get("value") or "").strip()
+            if value:
+                self.store.set_priority(value)
+                self.speak(f"Locked. Your top priority today is: {value}.")
+            else:
+                self.speak("Tell me: 'my top priority today is ...'")
+            return
+
+        if kind == "PRIORITY_GET":
+            p = self.store.get_priority()
+            if p:
+                self.speak(f"Your top priority is: {p}.")
+            else:
+                self.speak("You haven’t set a top priority yet. Say: 'my top priority today is ...'")
+            return
+
+        if kind == "SCREEN_SUMMARY":
+            self.speak("Screen summary is not enabled in this Phase 1 build yet.")
+            return
+
+        if kind == "OPEN_LINK":
+            target = meta.get("target")
+            self.speak(f"Open requested: {target}")
+            return
+
+        if kind == "WEB_LOOKUP":
+            q = (meta.get("query") or "").strip()
+            self.speak(self._web_lookup_phrase(q))
+            return
+
+        if kind == "SPOTIFY":
+            cmd = (meta.get("cmd") or "").strip()
+            query = meta.get("query")
+            if not cmd:
+                self.speak("Spotify command failed.")
+                return
+            self._handle_spotify(cmd, query)
+            return
+
+        self.speak("Ask me directly — I’ll answer.")
+
+    def run(self) -> None:
+        self.speak("Welcome back Mister Turley. I have today's rundown ready for you. Say: 'start my day' when you're ready.")
+        while True:
+            _log("[STAGE] LISTEN")
+            raw = self.listen()
+            self.process_one(raw)
+
+
+def run() -> None:
+    try:
+        from assistant.runtime.audio_config import configure_sounddevice  # type: ignore
+        configure_sounddevice()
+    except Exception:
+        pass
+
+    VeraApp().run()

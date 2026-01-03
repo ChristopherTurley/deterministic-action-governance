@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from assistant.voice.speaker import Speaker
+from assistant.voice.listener import VoiceListener
+from assistant.runtime.router import route_intent
+
+# Optional config imports (safe defaults if missing)
+try:
+    from assistant.config import ASSISTANT_MISSION  # type: ignore
+except Exception:
+    ASSISTANT_MISSION = (
+        "I'm VERA — a voice-first assistant built to keep you moving. "
+        "I help you prioritize, execute, and stay on track."
+    )
+
+try:
+    from assistant.config import USER_NAME  # type: ignore
+except Exception:
+    USER_NAME = os.getenv("VERA_USER_NAME", "Cp")
+
+
+def _now() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _preview(s: str, n: int = 160) -> str:
+    s = (s or "").replace("\n", " ").strip()
+    return s[:n] + ("..." if len(s) > n else "")
+
+
+def _log_line(line: str, log_path: Optional[Path]) -> None:
+    print(line)
+    if log_path:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+
+
+def run(log_path: Optional[str] = None) -> None:
+    log_file = Path(log_path) if log_path else None
+
+    speaker = Speaker()
+    listener = VoiceListener(model_size="base")
+
+    def say(text: str) -> None:
+        # IMPORTANT: this is the only place that calls TTS.
+        # Never call say() inside say() -> no recursion possible.
+        _log_line(f"VERA: {_preview(text)}", log_file)
+        try:
+            speaker.say_blocking(text)
+        except Exception:
+            # If TTS fails, still keep the app running
+            pass
+
+    say(f"Welcome back, {USER_NAME}. Today’s rundown is ready. Say: 'start my day' when you're ready.")
+
+    # Main loop
+    while True:
+        try:
+            _log_line("[STAGE] LISTEN", log_file)
+            raw = listener.listen() or ""
+            raw = raw.strip()
+            if not raw:
+                continue
+
+            _log_line(f"[RAW] {raw}", log_file)
+
+            r = route_intent(raw)
+
+            # ---- Deterministic routes ----
+            if r.name == "MISSION":
+                say(ASSISTANT_MISSION)
+                continue
+
+            if r.name == "START_MY_DAY":
+                say("Alright. Give me your top priority and your first deadline.")
+                continue
+
+            if r.name == "SCHEDULE_MY_DAY":
+                say("Say your tasks in order. I’ll turn it into a schedule.")
+                continue
+
+            if r.name == "PRIORITY_SET":
+                val = (r.payload or {}).get("value") or ""
+                if val:
+                    say(f"Locked. Your top priority today is: {val}.")
+                else:
+                    say("Tell me your top priority for today.")
+                continue
+
+            if r.name == "PRIORITY_GET":
+                # This runtime version doesn’t persist across runs unless you wire storage.
+                # If you already have storage elsewhere, plug it in here.
+                say("I can recall your priority once we wire in persistent memory. For now, set it again: 'my top priority today is ...'")
+                continue
+
+            if r.name == "SPOTIFY":
+                # Your spotify handler likely lives elsewhere. This is just a placeholder “ack”.
+                # If you have a controller that executes r.payload["action"], call it here.
+                say("Spotify command received.")
+                continue
+
+            if r.name == "WEB_LOOKUP":
+                q = (r.payload or {}).get("query") or raw
+                say(f"Web lookup requested: {q}")
+                continue
+
+            # ---- Fallback ----
+            say("Ask me directly — I’ll answer.")
+
+        except KeyboardInterrupt:
+            _log_line("[EXIT] Ctrl+C received. Exiting cleanly.", log_file)
+            return
+        except Exception as e:
+            _log_line(f"[ERROR] {type(e).__name__}: {e}", log_file)
+            # keep loop alive
+            continue

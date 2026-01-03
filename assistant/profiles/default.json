@@ -1,0 +1,12 @@
+{
+  "name": "Cp",
+  "timezone": "America/New_York",
+  "preferences": {
+    "brief_blocks": [
+      "morning",
+      "midday",
+      "afternoon"
+    ],
+    "tone": "ruthless"
+  }
+}

@@ -1,0 +1,225 @@
+from __future__ import annotations
+
+import time
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
+
+from assistant.router import route_text
+from assistant.state.store import StateStore
+from assistant.voice.speaker import Speaker
+from assistant.voice.listener import VoiceListener
+
+try:
+    from assistant.runtime.audio_config import configure_sounddevice
+except Exception:
+    configure_sounddevice = None  # type: ignore
+
+
+GREET_TEXT = "Welcome back Mister Turley. I have today's rundown ready for you. Say: 'start my day' when you're ready."
+MISSION_TEXT = (
+    "I'm VERA, a Voice-Enabled Reasoning Assistant. I provide real time dynamic analysis and proactive guidance tailored "
+    "to your immediate context. By understanding your voice, screen, and schedule, i ensure you stay focused, organized, "
+    "and on time throughout your day. Effectively serving as your personal secretary."
+)
+
+
+@dataclass
+class AppConfig:
+    wake_required: bool = True
+    priority_enabled: bool = True
+
+
+class VeraApp:
+    def __init__(self, *, wake_required: bool = True, priority_enabled: bool = True) -> None:
+        self.cfg = AppConfig(wake_required=wake_required, priority_enabled=priority_enabled)
+        self.store = StateStore()
+        self.speaker = Speaker()
+
+        self._spotify_prev_volume: Optional[int] = None
+        self._spotify_ducked: bool = False
+
+        self.listener = VoiceListener()
+
+    def speak(self, text: str) -> None:
+        try:
+            # your Speaker exposes .say()
+            self.speaker.say(text)
+        except Exception as e:
+            print(f"[AUDIO] speak() failed: {e}")
+
+    def _duck_spotify(self, duck_to: int = 12) -> None:
+        try:
+            from assistant.integrations.spotify_osx import spotify_get_volume, spotify_set_volume, spotify_is_running
+            if not spotify_is_running():
+                return
+            if self._spotify_prev_volume is None:
+                self._spotify_prev_volume = spotify_get_volume()
+            spotify_set_volume(duck_to)
+            self._spotify_ducked = True
+        except Exception:
+            pass
+
+    def _restore_spotify_volume(self) -> None:
+        try:
+            if self._spotify_ducked and isinstance(self._spotify_prev_volume, int):
+                from assistant.integrations.spotify_osx import spotify_set_volume
+                spotify_set_volume(self._spotify_prev_volume)
+        except Exception:
+            pass
+        finally:
+            self._spotify_ducked = False
+
+    def _handle_priority_set(self, value: str) -> str:
+        self.store.set_priority(value)
+        return f"Locked. Your top priority today is: {value}."
+
+    def _handle_priority_get(self) -> str:
+        p = self.store.get_priority()
+        if not p:
+            return "You haven’t set a top priority yet. Say: 'my top priority today is ...'"
+        return f"Your top priority is: {p}."
+
+    def _handle_time(self) -> str:
+        return time.strftime("It’s %I:%M %p.").lstrip("0")
+
+    def _handle_web_lookup(self, _query: str) -> str:
+        return "Looking that up for you."
+
+    def _handle_spotify(self, meta: Dict[str, Any]) -> str:
+        cmd = (meta or {}).get("cmd")
+
+        try:
+            import assistant.tools.spotify as sp
+        except Exception:
+            sp = None  # type: ignore
+
+        if cmd in ("pause", "stop"):
+            try:
+                if sp is not None and hasattr(sp, "pause"):
+                    sp.pause()
+            except Exception:
+                pass
+            self._restore_spotify_volume()
+            return "Paused."
+
+        if cmd in ("resume",):
+            try:
+                if sp is not None and hasattr(sp, "resume"):
+                    sp.resume()
+                return "Playing."
+            except Exception:
+                return "Spotify command failed."
+
+        if cmd == "play":
+            q = (meta or {}).get("query")
+            try:
+                if q:
+                    self._duck_spotify()
+                    if sp is not None and hasattr(sp, "play"):
+                        sp.play(q)
+                    return f"Playing: {q}."
+                if sp is not None and hasattr(sp, "resume"):
+                    sp.resume()
+                return "Playing."
+            except Exception:
+                return "Spotify command failed."
+
+        if cmd == "liked":
+            self._duck_spotify()
+            try:
+                from assistant.integrations.spotify_control import spotify_play_liked_from_top
+                spotify_play_liked_from_top()
+                return "Playing your Liked Songs."
+            except Exception:
+                try:
+                    if sp is not None and hasattr(sp, "liked_songs"):
+                        sp.liked_songs()
+                        return "Playing your Liked Songs."
+                except Exception:
+                    pass
+                return "Spotify command failed."
+
+        if cmd in ("next", "skip"):
+            try:
+                if sp is not None and hasattr(sp, "next_track"):
+                    sp.next_track()
+                return "Next."
+            except Exception:
+                return "Spotify command failed."
+
+        if cmd in ("previous", "back"):
+            try:
+                if sp is not None and hasattr(sp, "previous_track"):
+                    sp.previous_track()
+                return "Previous."
+            except Exception:
+                return "Spotify command failed."
+
+        return "Spotify command failed."
+
+    def process_one(self, raw: str) -> str:
+        r = route_text(
+            raw,
+            wake_required=self.cfg.wake_required,
+            priority_enabled=self.cfg.priority_enabled,
+            awake=self.store.state.awake,
+        )
+
+        kind = getattr(r, "kind", "LLM_FALLBACK")
+        meta = getattr(r, "meta", {}) or {}
+        cleaned = getattr(r, "cleaned", "")
+
+        if kind == "ASLEEP_IGNORE":
+            return ""
+        if kind == "WAKE":
+            self.store.wake()
+            return "I’m awake."
+        if kind == "NUDGE_WAKE":
+            return "Say 'Hey Vera' first, then ask your question."
+        if kind == "SLEEP":
+            self.store.sleep()
+            return "Going to sleep. Say 'Hey Vera' to wake me."
+        if kind == "MISSION":
+            return MISSION_TEXT
+        if kind == "TIME":
+            return self._handle_time()
+        if kind == "START_DAY":
+            return "Alright. Give me your top priority and your first deadline."
+        if kind == "SCREEN_SUMMARY":
+            return "Screen summary is not available yet."
+        if kind == "OPEN_LINK":
+            return f"Open link: {meta.get('target')} (not wired yet)."
+        if kind == "PRIORITY_SET":
+            return self._handle_priority_set(str(meta.get("value", "")).strip())
+        if kind == "PRIORITY_GET":
+            return self._handle_priority_get()
+        if kind == "WEB_LOOKUP":
+            q = str(meta.get("query", cleaned)).strip()
+            return self._handle_web_lookup(q)
+        if kind == "SPOTIFY":
+            return self._handle_spotify(meta)
+
+        return "Ask me directly — I’ll answer."
+
+    def run(self) -> None:
+        if configure_sounddevice is not None:
+            configure_sounddevice()
+
+        self.speak(GREET_TEXT)
+
+        while True:
+            print("[STAGE] LISTEN")
+            raw = (self.listener.listen() or "").strip()
+            if not raw:
+                continue
+            print(f"[RAW] {raw}")
+            print(f"USER: {raw}")
+
+            out = (self.process_one(raw) or "").strip()
+            if out:
+                print(f"VERA: {out}")
+                self.speak(out)
+
+
+def run() -> None:
+    VeraApp().run()

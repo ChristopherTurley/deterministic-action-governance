@@ -1,0 +1,18 @@
+"""
+Public router API used by runtime/app.py.
+
+app.py calls:
+    route(text, wake_required=..., is_awake=...)
+
+But the current implementation lives in assistant.router.core.route_text
+which may not accept the same keyword args. We wrap it to keep a stable API.
+"""
+from __future__ import annotations
+
+from .core import route_text
+
+def route(text: str, wake_required: bool = True, is_awake: bool = True, **kwargs):
+    # Forward only the args route_text expects (keep extra kwargs ignored)
+    return route_text(text, wake_required=wake_required, is_awake=is_awake)
+
+__all__ = ["route"]

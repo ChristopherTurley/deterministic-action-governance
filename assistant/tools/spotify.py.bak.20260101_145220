@@ -1,0 +1,39 @@
+from __future__ import annotations
+import subprocess
+import urllib.parse
+
+def _osascript(script: str) -> None:
+    subprocess.run(["osascript", "-e", script], check=False)
+
+def _open_uri(uri: str) -> None:
+    subprocess.run(["open", uri], check=False)
+
+def activate() -> None:
+    _osascript('tell application "Spotify" to activate')
+
+def play() -> None:
+    _osascript('tell application "Spotify" to play')
+
+def pause() -> None:
+    _osascript('tell application "Spotify" to pause')
+
+def liked_songs() -> None:
+    # Open Liked Songs collection
+    activate()
+    _open_uri("spotify:collection:tracks")
+    # give UI a beat, then play
+    _osascript('delay 0.4')
+    play()
+
+def search_and_play(query: str) -> None:
+    q = (query or "").strip()
+    if not q:
+        activate()
+        play()
+        return
+    activate()
+    uri = "spotify:search:" + urllib.parse.quote(q)
+    _open_uri(uri)
+    # Note: search view doesn't always auto-play; we attempt play after a short delay.
+    _osascript('delay 0.6')
+    play()

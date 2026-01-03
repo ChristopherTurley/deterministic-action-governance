@@ -1,0 +1,10 @@
+"""
+Public router API.
+
+runtime/app.py expects:
+    from assistant.router import route
+We provide that by aliasing core.route_text -> route.
+"""
+from .core import route_text as route
+
+__all__ = ["route"]

@@ -1,0 +1,150 @@
+from __future__ import annotations
+
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Callable
+
+from assistant.voice.speaker import Speaker
+from assistant.voice.listener import VoiceListener
+from assistant.runtime.router import route_intent
+from assistant.state.store import StateStore, VeraState
+
+# Optional config imports (safe defaults if missing)
+try:
+    from assistant.config import ASSISTANT_MISSION  # type: ignore
+except Exception:
+    ASSISTANT_MISSION = (
+        "I'm VERA — a voice-first assistant built to keep you moving. "
+        "I help you prioritize, execute, and stay on track."
+    )
+
+try:
+    from assistant.config import USER_NAME  # type: ignore
+except Exception:
+    USER_NAME = os.getenv("VERA_USER_NAME", "Cp")
+
+
+def _preview(s: str, n: int = 160) -> str:
+    s = (s or "").replace("\n", " ").strip()
+    return s[:n] + ("..." if len(s) > n else "")
+
+
+def _log_line(line: str, log_path: Optional[Path]) -> None:
+    print(line)
+    if log_path:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+
+
+def _make_sayer(speaker: Speaker, log_file: Optional[Path]) -> Callable[[str], None]:
+    def say(text: str) -> None:
+        _log_line(f"VERA: {_preview(text)}", log_file)
+        try:
+            speaker.say_blocking(text)
+        except Exception:
+            # If TTS fails, still keep runtime alive
+            pass
+    return say
+
+
+def process_one(raw: str, say: Callable[[str], None], state: VeraState, store: StateStore,
+                log_file: Optional[Path]) -> bool:
+    """
+    Process one input string.
+    Returns True if the caller should exit (sleep/quit).
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return False
+
+    _log_line(f"[RAW] {raw}", log_file)
+
+    r = route_intent(raw)
+
+    # ---- Deterministic routes ----
+    if r.name == "MISSION":
+        say(ASSISTANT_MISSION)
+        return False
+
+    if r.name in ("START_MY_DAY", "SCHEDULE_MY_DAY"):
+        say("Alright. Give me your top priority and your first deadline.")
+        return False
+
+    if r.name == "PRIORITY_SET":
+        val = (r.payload or {}).get("value") or ""
+        val = str(val).strip()
+        if val:
+            state.top_priority = val
+            store.save(state)
+            say(f"Locked. Your top priority today is: {val}.")
+        else:
+            say("Tell me your top priority for today.")
+        return False
+
+    if r.name == "PRIORITY_GET":
+        if state.top_priority:
+            say(f"Your top priority today is: {state.top_priority}.")
+        else:
+            say("You haven’t set a top priority yet. Say: 'my top priority today is ...'")
+        return False
+
+    if r.name == "SLEEP":
+        say("Going quiet. Say 'Hey Vera' when you need me.")
+        return True
+
+    if r.name == "SPOTIFY":
+        # Keep this acknowledgement deterministic for demo stability.
+        # Later you’ll wire actual Spotify actions here.
+        payload = r.payload or {}
+        action = payload.get("action", "play")
+        query = payload.get("query", "")
+        if query:
+            say(f"Spotify: {action} '{query}'.")
+        else:
+            say(f"Spotify: {action}.")
+        return False
+
+    if r.name == "WEB_LOOKUP":
+        q = (r.payload or {}).get("query") or raw
+        say(f"Web lookup requested: {q}")
+        return False
+
+    if r.name == "SCREEN_SUMMARY":
+        say("Screen summary requested.")
+        return False
+
+    # ---- Fallback ----
+    say("Ask me directly — I’ll answer.")
+    return False
+
+
+def run(log_path: str = "logs/transcript.log") -> None:
+    log_file = Path(log_path) if log_path else None
+
+    speaker = Speaker()
+    listener = VoiceListener(model_size="base")
+
+    store = StateStore("assistant/state/state.json")
+    state = store.load()
+
+    say = _make_sayer(speaker, log_file)
+
+    say(f"Welcome back, {USER_NAME}. Today’s rundown is ready. Say: 'start my day' when you're ready.")
+
+    while True:
+        try:
+            _log_line("[STAGE] LISTEN", log_file)
+            raw = listener.listen() or ""
+            if not raw.strip():
+                continue
+            should_exit = process_one(raw, say, state, store, log_file)
+            if should_exit:
+                return
+        except KeyboardInterrupt:
+            _log_line("[EXIT] Ctrl+C received. Exiting cleanly.", log_file)
+            return
+        except Exception as e:
+            _log_line(f"[ERROR] {type(e).__name__}: {e}", log_file)
+            continue

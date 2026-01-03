@@ -1,0 +1,160 @@
+from __future__ import annotations
+
+import os
+import time
+from datetime import datetime
+from typing import Optional
+
+from assistant.router import route
+from assistant.state.store import StateStore
+from assistant.tools import spotify as sp
+from assistant.tools.web import web_lookup
+from assistant.vision.screen import summarize_screen
+
+from assistant.voice.listener import VoiceListener
+from assistant.voice.speaker import Speaker
+
+LOG_DIR = "logs"
+
+def _ensure_logs() -> str:
+    os.makedirs(LOG_DIR, exist_ok=True)
+    path = os.path.join(LOG_DIR, "vera_transcript.log")
+    return path
+
+def _log(line: str, path: str) -> None:
+    stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    out = f"[{stamp}] {line}"
+    print(out)
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(out + "\n")
+    except Exception:
+        pass
+
+def _preview(s: str, n: int = 140) -> str:
+    s = (s or "").strip().replace("\n", " ")
+    return s if len(s) <= n else s[:n] + "..."
+
+class VeraApp:
+    def __init__(self) -> None:
+        self.store = StateStore()
+        self.speaker = Speaker()
+        self.listener = VoiceListener(model_size="base")
+        self.log_path = _ensure_logs()
+        self.wake_required = True
+
+    def speak(self, text: str) -> None:
+        text = (text or "").strip()
+        if not text:
+            return
+        _log(f"VERA: {_preview(text)}", self.log_path)
+        # Blocking prevents Vera from "cutting herself off"
+        self.speaker.say_blocking(text)
+
+    def process_one(self, raw: str) -> str:
+        raw = (raw or "").strip()
+        if not raw:
+            return ""
+        _log(f"USER: {_preview(raw)}", self.log_path)
+
+        r = route(raw, wake_required=self.wake_required, is_awake=self.store.state.awake)
+
+        name = getattr(r, "name", None) or getattr(r, "kind", None) or getattr(r, "type", None) or getattr(r, "intent", None) or getattr(r, "label", None) or "unknown"
+        meta = r.meta
+
+        if name == "SLEEP_BLOCK":
+            return ""  # ignore while sleeping
+
+        if name == "NUDGE_WAKE":
+            return "Say 'Hey Vera' first, then ask your question."
+
+        if name == "WAKE":
+            self.store.wake()
+            return "I'm listening."
+
+        if name == "WAKE_ACK":
+            return "I'm listening."
+
+        if name == "SLEEP":
+            self.store.sleep()
+            return "Going to sleep. Say 'Hey Vera' to wake me."
+
+        if name == "MISSION":
+            return (
+                "I'm VERA, a Voice-Enabled Reasoning Assistant here to keep you organized, focused, and on time. "
+                "I understand what you say, what you're looking at, and what's coming next. "
+                "I organize your day, anticipate priorities, and offer real-time guidance without distraction "
+            
+            )
+
+        if name == "START_DAY":
+            return "Alright. Give me your top priority and your first deadline."
+
+        if name == "PRIORITY_SET":
+            v = meta.get("value") or ""
+            self.store.set_priority(v)
+            return f"Locked. Your top priority today is: {v}."
+
+        if name == "PRIORITY_GET":
+            v = self.store.get_priority()
+            if not v:
+                return "You haven’t set a top priority yet. Say: 'my top priority today is ...'"
+            return f"Your top priority is: {v}."
+
+        if name == "TIME":
+            return time.strftime("It is %-I:%M %p.")
+
+        if name == "SCREEN_SUMMARY":
+            return summarize_screen()
+
+        if name == "WEB_LOOKUP":
+            q = meta.get("query") or raw
+            return web_lookup(q)
+
+        if name == "SPOTIFY":
+            cmd = meta.get("cmd")
+            query = meta.get("query") or ""
+            try:
+                if cmd == "liked":
+                    sp.liked_songs()
+                    return "Playing your Liked Songs."
+                if cmd == "pause":
+                    sp.pause()
+                    return "Paused."
+                if cmd == "resume":
+                    sp.play()
+                    return "Resumed."
+                if cmd == "play":
+                    sp.search_and_play(query)
+                    return "Playing."
+            except Exception:
+                return "Spotify command failed."
+            return "Spotify command received."
+
+        # Fallback
+        return "Ask me directly — I’ll answer."
+
+    def run(self) -> None:
+        # greet ONCE
+        self.speak("Welcome back Mister Turley. Your rundown for the day is available. Say: 'start my day' when you're ready.")
+        while True:
+            _log("[STAGE] LISTEN", self.log_path)
+            try:
+                raw = self.listener.listen()
+            except KeyboardInterrupt:
+                raise
+            except Exception:
+                raw = ""
+
+            raw = (raw or "").strip()
+            if not raw:
+                continue
+
+            _log(f"[RAW] {raw}", self.log_path)
+            out = self.process_one(raw)
+            if out:
+                self.speak(out)
+
+def run() -> None:
+    app = VeraApp()
+    app.run()

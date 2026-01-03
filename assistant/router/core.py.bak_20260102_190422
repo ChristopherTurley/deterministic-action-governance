@@ -1,0 +1,129 @@
+from __future__ import annotations
+
+import re
+from typing import Dict, Tuple
+
+from assistant.router.types import RouteResult
+from assistant.controllers.spotify_rules import classify_spotify
+
+# Accept common STT mishears of "Vera"
+_WAKE_RE = re.compile(
+    r"^\s*(hey\s+(vera|viera|veera|vieira|ferra)|vera|viera|veera|vieira|ferra)\b[\s,]*",
+    re.IGNORECASE,
+)
+
+def _strip_wake(raw: str) -> Tuple[bool, str]:
+    s = (raw or "").strip()
+    m = _WAKE_RE.match(s)
+    if not m:
+        return False, s
+    return True, s[m.end():].strip()
+
+def _norm(s: str) -> str:
+    s = (s or "").strip().lower()
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+def _is_open_link(c: str) -> Dict | None:
+    m = re.match(r"^open\s+(\d+)$", c)
+    if m:
+        return {"target": int(m.group(1))}
+    if c in ("open it", "open"):
+        return {"target": "it"}
+    return None
+
+# Priority setters (expanded)
+_PRI_SET_RE = re.compile(
+    r"^(my\s+)?("
+    r"(top|main|number one|#?1)\s+priority"
+    r"|priority"
+    r")(\s+(today|for the day))?\s+is\s+(.+)$"
+)
+
+# Priority getters (robust)
+_PRI_GET_RES = [
+    re.compile(r"^what did i (just )?say my (top )?priority was\??$"),
+    re.compile(r"^what('?s| is) my (top )?priority\??$"),
+    re.compile(r"^what is my (top )?priority\??$"),
+]
+
+def route_text(
+    raw: str,
+    *,
+    wake_required: bool = True,
+    priority_enabled: bool = True,
+    awake: bool = True,
+) -> RouteResult:
+    has_wake, stripped = _strip_wake(raw)
+    cleaned = _norm(stripped)
+
+    # asleep handling
+    if not awake:
+        if has_wake or cleaned in ("wake", "wake up"):
+            return RouteResult(kind="WAKE", meta={}, cleaned=cleaned, raw=raw)
+        return RouteResult(kind="ASLEEP_IGNORE", meta={}, cleaned=cleaned, raw=raw)
+
+    # open link
+    open_meta = _is_open_link(cleaned)
+    if open_meta:
+        return RouteResult(kind="OPEN_LINK", meta=open_meta | {"has_wake": has_wake}, cleaned=cleaned, raw=raw)
+
+    # wake required gate
+    if wake_required and not has_wake:
+        return RouteResult(kind="NUDGE_WAKE", meta={"requires_wake": True}, cleaned=cleaned, raw=raw)
+
+    # sleep
+    if cleaned in ("sleep", "go to sleep", "vera sleep"):
+        return RouteResult(kind="SLEEP", meta={}, cleaned=cleaned, raw=raw)
+
+    # time
+    if cleaned in ("what time is it", "time", "tell me the time", "what's the time"):
+        return RouteResult(kind="TIME", meta={}, cleaned=cleaned, raw=raw)
+
+    # mission
+    if any(x in cleaned for x in ("what are you", "your mission", "mission statement", "who are you")):
+        return RouteResult(kind="MISSION", meta={}, cleaned=cleaned, raw=raw)
+
+    # screen summary
+    if "summarize my screen" in cleaned or "what's on my screen" in cleaned or cleaned == "summarize":
+        return RouteResult(kind="SCREEN_SUMMARY", meta={}, cleaned=cleaned, raw=raw)
+
+    # priority
+    if priority_enabled:
+        m = _PRI_SET_RE.match(cleaned)
+        if m:
+            value = (m.group(6) or "").strip(" .")
+            if value:
+                return RouteResult(kind="PRIORITY_SET", meta={"value": value}, cleaned=cleaned, raw=raw)
+
+        for rx in _PRI_GET_RES:
+            if rx.match(cleaned):
+                return RouteResult(kind="PRIORITY_GET", meta={}, cleaned=cleaned, raw=raw)
+
+    # start day
+    if cleaned in ("start my day", "begin my day", "todays rundown", "today's rundown"):
+        return RouteResult(kind="START_DAY", meta={}, cleaned=cleaned, raw=raw)
+
+    # web lookup (generic)
+    if cleaned.startswith(("search the web for ", "find the latest ", "look up ")):
+        q = cleaned
+        q = q.replace("search the web for ", "")
+        q = q.replace("look up ", "")
+        q = q.replace("find the latest ", "")
+        return RouteResult(kind="WEB_LOOKUP", meta={"query": q.strip()}, cleaned=cleaned, raw=raw)
+
+    # sport schedule heuristic (not NHL-only)
+    if any(k in cleaned for k in ("games", "schedule", "tonight", "today")) and any(
+        s in cleaned for s in ("nhl", "nba", "nfl", "mlb", "wnba", "epl", "nhl", "soccer", "hockey", "basketball", "football", "baseball")
+    ):
+        return RouteResult(kind="WEB_LOOKUP", meta={"query": cleaned.strip()}, cleaned=cleaned, raw=raw)
+
+    # spotify (IMPORTANT: classify on stripped/cleaned, not raw)
+    sp = classify_spotify(stripped)
+    if sp and getattr(sp, "handled", False):
+        meta = {"cmd": sp.cmd}
+        if getattr(sp, "query", None):
+            meta["query"] = sp.query
+        return RouteResult(kind="SPOTIFY", meta=meta, cleaned=cleaned, raw=raw)
+
+    return RouteResult(kind="LLM_FALLBACK", meta={}, cleaned=cleaned, raw=raw)

@@ -1,0 +1,9 @@
+from __future__ import annotations
+
+from .core import route_text
+from .types import RouteResult
+
+__all__ = ["route_text", "RouteResult", "route"]
+
+def route(raw: str, *, wake_required: bool = True, is_awake: bool = True, priority_enabled: bool = True) -> RouteResult:
+    return route_text(raw, wake_required=wake_required, priority_enabled=priority_enabled, awake=is_awake)

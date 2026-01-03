@@ -1,0 +1,434 @@
+from __future__ import annotations
+
+import datetime as _dt
+import os
+import subprocess
+import sys
+from pathlib import Path
+from typing import Callable, Dict, Optional
+from assistant.core.sports_integration import try_handle_sports
+
+from assistant.router.core import route_text
+from assistant.state.store import StateStore
+
+# Optional: pin sounddevice input device if your runtime/audio_config exists
+try:
+    from assistant.runtime.audio_config import configure_sounddevice  # type: ignore
+except Exception:
+    configure_sounddevice = None  # type: ignore
+
+
+# ----------------------------
+# Utilities
+# ----------------------------
+
+def _ts() -> str:
+    return _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _ensure_logs_dir() -> Path:
+    p = Path("logs")
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _append_log(line: str) -> None:
+    logs_dir = _ensure_logs_dir()
+    fp = logs_dir / "transcript.log"
+    fp.write_text(fp.read_text() + line + "\n" if fp.exists() else line + "\n", encoding="utf-8")
+
+
+def _macos_say(text: str, voice: Optional[str] = None, rate: Optional[int] = None) -> bool:
+    """
+    macOS TTS using `say`. Returns True if invoked successfully.
+    """
+    text = (text or "").strip()
+    if not text:
+        return False
+    try:
+        cmd = ["say"]
+        if voice:
+            cmd += ["-v", voice]
+        if rate:
+            cmd += ["-r", str(rate)]
+        cmd += [text]
+        subprocess.run(cmd, check=False)
+        return True
+    except Exception:
+        return False
+
+
+def _osascript(script: str) -> tuple[bool, str]:
+    try:
+        out = subprocess.check_output(["osascript", "-e", script], stderr=subprocess.STDOUT, text=True)
+        return True, (out or "").strip()
+    except subprocess.CalledProcessError as e:
+        return False, (e.output or "").strip()
+    except Exception as e:
+        return False, str(e)
+
+
+# ----------------------------
+# Spotify control (AppleScript)
+# ----------------------------
+
+def spotify_play_query(query: str) -> tuple[bool, str]:
+    """
+    Uses Spotify search via AppleScript:
+    - This starts playback; behavior depends on Spotify state.
+    - For Phase 1, we keep it simple.
+    """
+    q = (query or "").strip()
+    if not q:
+        return False, "Empty query."
+    # Play if running; use 'play track' requires URI; instead we search in-app by URL open:
+    # Easiest Phase 1: tell Spotify to play, and also open a search URL in Spotify.
+    # Spotify URL scheme works: spotify:search:<query>
+    # We'll open it then play.
+    script = f'''
+    try
+      tell application "Spotify"
+        activate
+        open location "spotify:search:{q.replace('"', '')}"
+        play
+      end tell
+      return "OK"
+    on error errMsg number errNum
+      return "ERROR " & errNum & ": " & errMsg
+    end try
+    '''
+    ok, msg = _osascript(script)
+    return ok and not msg.startswith("ERROR"), msg
+
+
+def spotify_play_liked_from_top() -> tuple[bool, str]:
+    """
+    The reliable way you confirmed:
+      tell application "Spotify" to play track "spotify:collection"
+    """
+    script = r'''
+    try
+      tell application "Spotify"
+        activate
+        play track "spotify:collection"
+      end tell
+      return "OK"
+    on error errMsg number errNum
+      return "ERROR " & errNum & ": " & errMsg
+    end try
+    '''
+    ok, msg = _osascript(script)
+    return ok and not msg.startswith("ERROR"), msg
+
+
+def spotify_pause() -> tuple[bool, str]:
+    script = r'''
+    try
+      tell application "Spotify" to pause
+      return "OK"
+    on error errMsg number errNum
+      return "ERROR " & errNum & ": " & errMsg
+    end try
+    '''
+    ok, msg = _osascript(script)
+    return ok and not msg.startswith("ERROR"), msg
+
+
+def spotify_resume() -> tuple[bool, str]:
+    script = r'''
+    try
+      tell application "Spotify" to play
+      return "OK"
+    on error errMsg number errNum
+      return "ERROR " & errNum & ": " & errMsg
+    end try
+    '''
+    ok, msg = _osascript(script)
+    return ok and not msg.startswith("ERROR"), msg
+
+
+def spotify_next() -> tuple[bool, str]:
+    script = r'''
+    try
+      tell application "Spotify" to next track
+      return "OK"
+    on error errMsg number errNum
+      return "ERROR " & errNum & ": " & errMsg
+    end try
+    '''
+    ok, msg = _osascript(script)
+    return ok and not msg.startswith("ERROR"), msg
+
+
+def spotify_previous() -> tuple[bool, str]:
+    script = r'''
+    try
+      tell application "Spotify" to previous track
+      return "OK"
+    on error errMsg number errNum
+      return "ERROR " & errNum & ": " & errMsg
+    end try
+    '''
+    ok, msg = _osascript(script)
+    return ok and not msg.startswith("ERROR"), msg
+
+
+# ----------------------------
+# App
+# ----------------------------
+
+Handler = Callable[[dict], str]
+
+
+class VeraApp:
+    def __init__(self) -> None:
+        self.store = StateStore()
+        self.wake_required = True
+        self.priority_enabled = True
+
+        # TTS config
+        self.voice = os.environ.get("VERA_VOICE")  # optional macOS voice name
+        self.rate = int(os.environ.get("VERA_TTS_RATE", "210"))
+
+        # STT (optional)
+        self.stt = None
+        self.use_stt = os.environ.get("VERA_USE_STT", "1").strip() != "0"
+        if self.use_stt:
+            try:
+                from assistant.audio.stt import build_stt_from_env  # type: ignore
+                self.stt = build_stt_from_env()
+            except Exception as e:
+                print(f"[WARN] STT not available ({e}). Falling back to text input.")
+                self.stt = None
+
+        # One mapping table: route kind -> handler
+        self.handlers: Dict[str, Handler] = {
+            "NUDGE_WAKE": self.h_nudge_wake,
+            "WAKE": self.h_wake,
+            "ASLEEP_IGNORE": self.h_asleep_ignore,
+            "SLEEP": self.h_sleep,
+            "MISSION": self.h_mission,
+            "TIME": self.h_time,
+            "START_DAY": self.h_start_day,
+            "PRIORITY_SET": self.h_priority_set,
+            "PRIORITY_GET": self.h_priority_get,
+            "SPOTIFY": self.h_spotify,
+            "WEB_LOOKUP": self.h_web_lookup,
+            "SCREEN_SUMMARY": self.h_screen_summary,
+            "OPEN_LINK": self.h_open_link,
+            "LLM_FALLBACK": self.h_llm_fallback,
+        }
+
+    # -------- TTS / logging --------
+
+    def speak(self, text: str) -> None:
+        text = (text or "").strip()
+        if not text:
+            return
+        print(f"[{_ts()}] VERA: {text}")
+        _append_log(f"[{_ts()}] VERA: {text}")
+
+        # macOS say (preferred)
+        ok = _macos_say(text, voice=self.voice, rate=self.rate)
+        if not ok:
+            # If say fails, we still printed (so Phase 1 isn't blocked).
+            pass
+
+    def log_user(self, raw: str) -> None:
+        raw = (raw or "").strip()
+        if not raw:
+            return
+        print(f"[{_ts()}] USER: {raw}")
+        _append_log(f"[{_ts()}] USER: {raw}")
+
+    # -------- Core processing --------
+
+    def process_one(self, raw: str) -> str:
+        """
+        Canonical routing:
+          route_text(...) -> RouteResult (kind/meta/cleaned/raw)
+          then dispatch via mapping table.
+        """
+        rr = route_text(
+            raw,
+            wake_required=self.wake_required,
+            priority_enabled=self.priority_enabled,
+            awake=self.store.state.awake,
+        )
+
+        handler = self.handlers.get(rr.kind, self.h_llm_fallback)
+        return handler(rr.meta)
+
+    def run(self) -> None:
+        # Pin sounddevice device if available (helps with mic issues)
+        if configure_sounddevice is not None:
+            try:
+                configure_sounddevice()
+            except Exception:
+                pass
+
+        self.speak("Welcome back Mister Turley. Your rundown for the day is available. Say: 'start my day' when you're ready.")
+
+        while True:
+            try:
+                print(f"[{_ts()}] [STAGE] LISTEN")
+
+                if self.stt is not None:
+                    text = self.stt.listen_once(max_seconds=7.0)
+                    if not text:
+                        continue
+                    raw = text
+                    print(f"[{_ts()}] [RAW] {raw}")
+                else:
+                    raw = input("> ").strip()
+                    if not raw:
+                        continue
+
+                self.log_user(raw)
+                out = self.process_one(raw)
+                if out:
+                    self.speak(out)
+
+            except KeyboardInterrupt:
+                print("[EXIT] Ctrl+C received. Exiting cleanly.")
+                break
+
+    # ----------------------------
+    # Handlers
+    # ----------------------------
+
+    def h_nudge_wake(self, meta: dict) -> str:
+        return "Say 'Hey Vera' first, then ask your question."
+
+    def h_wake(self, meta: dict) -> str:
+        self.store.wake()
+        return "I’m awake."
+
+    def h_asleep_ignore(self, meta: dict) -> str:
+        return ""  # silent ignore while asleep
+
+    def h_sleep(self, meta: dict) -> str:
+        self.store.sleep()
+        return "Going to sleep. Say 'Hey Vera' to wake me."
+
+    def h_mission(self, meta: dict) -> str:
+        return (
+            "I'm VERA, a Voice-Enabled Reasoning Assistant here to keep you organized, focused, and on time. "
+            "I understand what you say, what you're looking at, and what's coming next — "
+            "by organizing your day, anticipating priorities, and offering real-time guidance without distraction."
+        )
+
+    def h_time(self, meta: dict) -> str:
+        now = _dt.datetime.now()
+        return now.strftime("It is %I:%M %p.").lstrip("0")
+
+    def h_start_day(self, meta: dict) -> str:
+        # Phase 1: simple prompt flow
+        if not self.store.get_priority():
+            return "Alright. Give me your top priority and your first deadline."
+        return "Alright. Your priority is set. Give me your first deadline."
+
+    def h_priority_set(self, meta: dict) -> str:
+        value = (meta.get("value") or "").strip()
+        if not value:
+            return "Tell me: 'my top priority today is ...'"
+        self.store.set_priority(value)
+        return f"Locked. Your top priority today is: {value}."
+
+    def h_priority_get(self, meta: dict) -> str:
+        p = self.store.get_priority()
+        if not p:
+            return "You haven’t set a top priority yet. Say: 'my top priority today is ...'"
+        return f"Your top priority is: {p}."
+
+    def h_spotify(self, meta: dict) -> str:
+        cmd = (meta.get("cmd") or "").strip().lower()
+        query = (meta.get("query") or "").strip()
+
+        if cmd == "liked":
+            ok, msg = spotify_play_liked_from_top()
+            return "Playing your Liked Songs." if ok else "Spotify command failed."
+
+        if cmd == "pause":
+            ok, msg = spotify_pause()
+            return "Paused." if ok else "Spotify command failed."
+
+        if cmd == "resume":
+            ok, msg = spotify_resume()
+            return "Playing." if ok else "Spotify command failed."
+
+        if cmd in ("next", "skip"):
+            ok, msg = spotify_next()
+            return "Next track." if ok else "Spotify command failed."
+
+        if cmd in ("previous", "prev", "back"):
+            ok, msg = spotify_previous()
+            return "Previous track." if ok else "Spotify command failed."
+
+        if cmd == "play":
+            if not query:
+                ok, msg = spotify_resume()
+                return "Playing." if ok else "Spotify command failed."
+            ok, msg = spotify_play_query(query)
+            return f"Playing: {query}." if ok else "Spotify command failed."
+
+        return "Spotify command not recognized."
+
+    def h_web_lookup(self, meta: dict) -> str:
+        # Phase 1: stub. In Phase 2 you can wire real browsing/scraping.
+        q = (meta.get("query") or "").strip()
+if not q:
+    return "Web lookup requested, but query was empty."
+
+# ✅ SPORTS INTERCEPT (sync wrapper)
+import asyncio
+
+async def _sports():
+    return await try_handle_sports(
+        q,
+        state,
+        say=say,
+        render=render,
+        open_url=getattr(screen, "open_url", None) if "screen" in globals() else None
+    )
+
+try:
+    handled = asyncio.run(_sports())
+except RuntimeError:
+    # If we're already inside an event loop
+    handled = asyncio.get_event_loop().run_until_complete(_sports())
+
+if handled:
+    return ""
+
+return f"Web lookup requested: {q}"
+
+def h_screen_summary(self, meta: dict) -> str:
+        # Phase 1: stub (until you wire screen capture + multimodal summary)
+        return "Screen summary is not wired yet in Phase 1."
+
+    def h_open_link(self, meta: dict) -> str:
+        # Phase 1: stub for your web results “Open 2” interaction.
+        target = meta.get("target")
+        return f"Open link: {target} (not wired yet)."
+
+    def h_llm_fallback(self, meta: dict) -> str:
+        # Phase 1: keep this strict; no wandering. Your “ruthless execution” posture.
+        return "Ask me directly — I’ll answer."
+
+
+def run() -> None:
+    app = VeraApp()
+    app.run()
+
+
+def process_one(raw: str) -> str:
+    """
+    Convenience API used by tools/init_prompt_tests.py.
+    """
+    app = VeraApp()
+    return app.process_one(raw)
+
+
+if __name__ == "__main__":
+    run()

@@ -1,0 +1,169 @@
+from __future__ import annotations
+
+import os
+import time
+import traceback
+import warnings
+from typing import Optional, List
+
+from assistant.voice.listener import VoiceListener
+from assistant.voice.speaker import Speaker
+from assistant.config import ASSISTANT_MISSION
+from assistant.services.web_search.aggregator import FallbackWebSearch
+from assistant.services.web_search.ddg import DuckDuckGoSearch
+from assistant.services.web_search.serpapi import SerpApiSearch
+from assistant.services.web_search.tavily import TavilySearch
+
+from assistant.runtime.router import route_intent
+from assistant.controllers.spotify_rules import execute_spotify
+
+from assistant.features.session import load_profile, load_last_session, save_session
+from assistant.features.daily_brief import render_brief, is_start_my_day, is_schedule_my_day, CalendarEvent
+from assistant.integrations.weather import get_weather_line
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"resource_tracker: There appear to be .* leaked semaphore objects",
+    category=UserWarning,
+)
+
+
+def _log_line(line: str, log_path: str) -> None:
+    line = (line or "").rstrip()
+    print(line)
+    try:
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+
+def _preview(text: str, n: int = 220) -> str:
+    t = (text or "").replace("\n", " ").strip()
+    return t if len(t) <= n else (t[: n - 3] + "...")
+
+def run() -> None:
+    listener = VoiceListener(model_size="base")
+    speaker = Speaker()
+
+    def speak(text: str) -> None:
+        _log_line(f"VERA: {_preview(text)}", log_path)
+        speak(text)
+
+
+    web_search = FallbackWebSearch(
+        providers=[
+            TavilySearch(api_key=os.getenv("TAVILY_API_KEY", "")),
+            SerpApiSearch(api_key=os.getenv("SERPAPI_API_KEY", "")),
+            DuckDuckGoSearch(),
+        ]
+    )
+
+    profile = load_profile()
+    log_path = os.path.join('assistant', 'profiles', 'vera_transcript.log')
+    try:
+        open(log_path, 'a', encoding='utf-8').close()
+    except Exception:
+        pass
+
+    last = load_last_session()
+    save_session("login", {"name": profile.name})
+
+    # State: Phase 1 storage (local runtime). Phase 1.1 will persist.
+    user_priority: Optional[str] = None
+
+    # Greeting (Login feel)
+    greet = f"Welcome back, {profile.name}. Today’s rundown is ready."
+    if last.get("ts"):
+        greet += " Say: 'start my day' when you're ready."
+    speak(greet)
+
+    try:
+        while True:
+            text = (listener.listen() or "").strip()
+            _log_line(f"HEARD: {_preview(text)}", log_path)
+            if not text:
+                continue
+
+            r = route_intent(text)
+
+            _log_line(f"ROUTE: {r.name}", log_path)
+
+            if r.name == "SPOTIFY":
+                ok, msg = execute_spotify(r.payload["action"])
+                speak(msg if msg else ("Done." if ok else "I couldn't do that."))
+                continue
+
+            if r.name == "PRIORITY_SET":
+                user_priority = (r.payload.get("value") or "").strip()
+                speak(f"Locked. Your top priority today is: {user_priority}.")
+                continue
+
+            if r.name == "PRIORITY_GET":
+                if user_priority:
+                    speak(f"Your top priority today is: {user_priority}.")
+                else:
+                    speak("You haven’t set a top priority yet. Say: 'my top priority today is ...'")
+                continue
+
+            if r.name == "START_MY_DAY" or is_start_my_day(text):
+                weather_line = get_weather_line(web_search, location_hint="near me")
+                events: List[CalendarEvent] = []  # Phase 1: placeholder; integrate calendar next
+                brief = render_brief(profile.name, user_priority, weather_line, events)
+
+                # Speak in a tight demo format
+                speak(brief.greeting)
+                speak(brief.local_time)
+                speak(brief.weather_line)
+                speak("\n".join(brief.calendar_lines))
+                speak("\n".join(brief.plan_blocks))
+                speak(brief.close)
+                continue
+
+            if r.name == "SCHEDULE_MY_DAY" or is_schedule_my_day(text):
+                # Phase 1 scaffold (real scheduling will come after calendar integration)
+                speak("Scheduling mode is Phase 1.1. For now: I can generate a plan, then we’ll wire calendar + reminders.")
+                continue
+
+            if r.name == "MISSION":
+                speak(ASSISTANT_MISSION)
+                continue
+
+            if r.name == "WEB_LOOKUP":
+                q = (r.payload.get("query") or "").strip()
+                sources = web_search.search(q, max_results=3) or []
+                if not sources:
+                    speak("I couldn’t pull web results right now.")
+                else:
+                    bullets = []
+                    for s in sources[:3]:
+                        sn = (s.snippet or s.title or "").strip()
+                        sn = " ".join(sn.split())[:140]
+                        bullets.append(f"- {sn}")
+                    speak(sources[0].title)
+                    speak("Key points: " + " ".join(bullets))
+                continue
+
+            # Fallback
+            speak("Ask me directly — I’ll answer.")
+            time.sleep(0.01)
+
+    except KeyboardInterrupt:
+        print("\n[EXIT] Ctrl+C received. Clean shutdown.")
+        try:
+            listener.close()
+        except Exception:
+            pass
+        try:
+            speaker.close()
+        except Exception:
+            pass
+        raise SystemExit(0)
+
+    except Exception:
+        print("[FATAL] Unhandled error:")
+        traceback.print_exc()
+        try:
+            speak("I hit an error and stopped. Check the console.")
+        except Exception:
+            pass
+        os._exit(1)

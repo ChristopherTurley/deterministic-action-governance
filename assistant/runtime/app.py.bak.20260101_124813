@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+import os
+import time
+import traceback
+import warnings
+from typing import Optional, List
+
+from assistant.voice.listener import VoiceListener
+from assistant.voice.speaker import Speaker
+from assistant.services.web_search.aggregator import FallbackWebSearch
+from assistant.services.web_search.ddg import DuckDuckGoSearch
+from assistant.services.web_search.serpapi import SerpApiSearch
+from assistant.services.web_search.tavily import TavilySearch
+
+from assistant.runtime.router import route_intent
+from assistant.controllers.spotify_rules import execute_spotify
+
+from assistant.features.session import load_profile, load_last_session, save_session
+from assistant.features.daily_brief import render_brief, is_start_my_day, is_schedule_my_day, CalendarEvent
+from assistant.integrations.weather import get_weather_line
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"resource_tracker: There appear to be .* leaked semaphore objects",
+    category=UserWarning,
+)
+
+def run() -> None:
+    listener = VoiceListener(model_size="base")
+    speaker = Speaker()
+
+    web_search = FallbackWebSearch(
+        providers=[
+            TavilySearch(api_key=os.getenv("TAVILY_API_KEY", "")),
+            SerpApiSearch(api_key=os.getenv("SERPAPI_API_KEY", "")),
+            DuckDuckGoSearch(),
+        ]
+    )
+
+    profile = load_profile()
+    last = load_last_session()
+    save_session("login", {"name": profile.name})
+
+    # State: Phase 1 storage (local runtime). Phase 1.1 will persist.
+    user_priority: Optional[str] = None
+
+    # Greeting (Login feel)
+    greet = f"Welcome back, {profile.name}. Today’s rundown is ready."
+    if last.get("ts"):
+        greet += " Say: 'start my day' when you're ready."
+    speaker.say_blocking(greet)
+
+    try:
+        while True:
+            text = (listener.listen() or "").strip()
+            if not text:
+                continue
+
+            r = route_intent(text)
+
+            if r.name == "SPOTIFY":
+                ok, msg = execute_spotify(r.payload["action"])
+                speaker.say_blocking(msg if msg else ("Done." if ok else "I couldn't do that."))
+                continue
+
+            if r.name == "PRIORITY_SET":
+                user_priority = (r.payload.get("value") or "").strip()
+                speaker.say_blocking(f"Locked. Your top priority today is: {user_priority}.")
+                continue
+
+            if r.name == "PRIORITY_GET":
+                if user_priority:
+                    speaker.say_blocking(f"Your top priority today is: {user_priority}.")
+                else:
+                    speaker.say_blocking("You haven’t set a top priority yet. Say: 'my top priority today is ...'")
+                continue
+
+            if r.name == "START_MY_DAY" or is_start_my_day(text):
+                weather_line = get_weather_line(web_search, location_hint="near me")
+                events: List[CalendarEvent] = []  # Phase 1: placeholder; integrate calendar next
+                brief = render_brief(profile.name, user_priority, weather_line, events)
+
+                # Speak in a tight demo format
+                speaker.say_blocking(brief.greeting)
+                speaker.say_blocking(brief.local_time)
+                speaker.say_blocking(brief.weather_line)
+                speaker.say_blocking("\n".join(brief.calendar_lines))
+                speaker.say_blocking("\n".join(brief.plan_blocks))
+                speaker.say_blocking(brief.close)
+                continue
+
+            if r.name == "SCHEDULE_MY_DAY" or is_schedule_my_day(text):
+                # Phase 1 scaffold (real scheduling will come after calendar integration)
+                speaker.say_blocking("Scheduling mode is Phase 1.1. For now: I can generate a plan, then we’ll wire calendar + reminders.")
+                continue
+
+            if r.name == "WEB_LOOKUP":
+                q = (r.payload.get("query") or "").strip()
+                sources = web_search.search(q, max_results=3) or []
+                if not sources:
+                    speaker.say_blocking("I couldn’t pull web results right now.")
+                else:
+                    bullets = []
+                    for s in sources[:3]:
+                        sn = (s.snippet or s.title or "").strip()
+                        sn = " ".join(sn.split())[:140]
+                        bullets.append(f"- {sn}")
+                    speaker.say_blocking(sources[0].title)
+                    speaker.say_blocking("Key points: " + " ".join(bullets))
+                continue
+
+            # Fallback
+            speaker.say_blocking("Ask me directly — I’ll answer.")
+            time.sleep(0.01)
+
+    except KeyboardInterrupt:
+        print("\n[EXIT] Ctrl+C received. Clean shutdown.")
+        try:
+            listener.close()
+        except Exception:
+            pass
+        try:
+            speaker.close()
+        except Exception:
+            pass
+        raise SystemExit(0)
+
+    except Exception:
+        print("[FATAL] Unhandled error:")
+        traceback.print_exc()
+        try:
+            speaker.say_blocking("I hit an error and stopped. Check the console.")
+        except Exception:
+            pass
+        os._exit(1)
