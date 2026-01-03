@@ -1,6 +1,0 @@
-from __future__ import annotations
-
-from .core import route_text
-from .types import RouteResult
-
-__all__ = ["route_text", "RouteResult"]
