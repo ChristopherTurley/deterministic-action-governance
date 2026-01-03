@@ -47,6 +47,16 @@ def route_text(
     cleaned = _norm(stripped)
     cmd = _cmd(cleaned)
 
+    # --- Phase B micro-patch: wake-only + wake+help handling ---
+    # If the user only says the wake phrase, treat it as WAKE.
+    if has_wake and cmd == "":
+        return RouteResult(kind="WAKE", meta={}, cleaned=cleaned, requires_wake=False, raw=raw)
+
+    # If the user wakes and asks for help/capabilities, map to MISSION (handled in runtime).
+    if has_wake and cmd in ("what can you do", "what do you do", "help", "what are you"):
+        return RouteResult(kind="MISSION", meta={}, cleaned=cleaned, requires_wake=True, raw=raw)
+    # --- end micro-patch ---
+
     if not awake:
         if has_wake or cmd in ("wake", "wake up"):
             return RouteResult(kind="WAKE", meta={}, cleaned=cleaned, requires_wake=False, raw=raw)

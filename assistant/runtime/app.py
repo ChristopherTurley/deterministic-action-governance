@@ -409,6 +409,21 @@ class VeraApp:
 
         return "Here’s a focused plan. " + " ".join(lines)
 
+
+    # --- Phase B micro-patch: mission -> capabilities list ---
+    def _mission_capabilities(self) -> str:
+        return (
+            "Here’s what I can do in VERA v1:\n"
+            "- Start your day: say 'start my day' to begin task intake.\n"
+            "- Capture tasks: give tasks with times (e.g., 'walk Moose at 3pm').\n"
+            "- Top priority: set/get your priority ('my top priority today is ...').\n"
+            "- Build a simple schedule: say 'build my schedule'.\n"
+            "- Time: ask 'what time is it'.\n"
+            "- Sleep/Wake: say 'go to sleep' and 'hey vera' to wake me.\n"
+            "- Web lookup (if enabled): ask a question and I can look it up.\n"
+            "- Spotify (if enabled): play/pause/resume/search."
+        )
+    # --- end micro-patch ---
     # -------- routing --------
 
     def process_one(self, raw: str) -> str:
@@ -443,7 +458,7 @@ class VeraApp:
             self.store.sleep()
             return "Going to sleep. Say 'Hey Vera' to wake me."
         if kind == "MISSION":
-            return MISSION_TEXT
+            return self._mission_capabilities()
         if kind == "TIME":
             return self._handle_time()
         if kind == "START_DAY":
