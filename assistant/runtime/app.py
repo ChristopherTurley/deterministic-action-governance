@@ -451,7 +451,7 @@ class VeraApp:
             return ""
         if kind == "WAKE":
             self.store.wake()
-            return "I’m awake."
+            return "Yes?"
         if kind == "NUDGE_WAKE":
             return "Say 'Hey Vera' first, then ask your question."
         if kind == "SLEEP":
