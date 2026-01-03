@@ -466,13 +466,18 @@ class VeraApp:
             print("[STAGE] LISTEN")
             raw = (self.listener.listen() or "").strip()
 
-
-            # --- Wake gate tuning: silently ignore background audio/lyrics ---
-            # Do not respond or route when wake is required and wake phrase is missing.
-            if getattr(self, 'wake_required', True) and raw:
-                if not _is_strict_wake(raw):
-                    raw = ''
-            # --- End wake gate tuning ---
+        # --- Wake gate tuning: silently ignore background audio/lyrics ---
+        if getattr(self, "wake_required", True):
+            # Only proceed if we heard a strict wake phrase.
+            # If user merely mentions "vera" without wake, optionally warn once elsewhere.
+            if raw and (not _is_strict_wake(raw)):
+                # If it doesn't even mention vera, treat as background noise and ignore silently.
+                if not _mentions_vera(raw):
+                    continue
+                # If it mentions vera but isn't a strict wake, ignore silently here too
+                # (avoids spamming during songs that say 'vera' or similar).
+                continue
+        # --- End wake gate tuning ---
             if not raw:
                 continue
             print(f"[RAW] {raw}")

@@ -467,12 +467,13 @@ class VeraApp:
             raw = (self.listener.listen() or "").strip()
 
 
-            # --- Wake gate tuning: silently ignore background audio/lyrics ---
-            # Do not respond or route when wake is required and wake phrase is missing.
-            if getattr(self, 'wake_required', True) and raw:
-                if not _is_strict_wake(raw):
-                    raw = ''
-            # --- End wake gate tuning ---
+        # --- Wake gate tuning: silently ignore background audio/lyrics ---
+        # Do not respond or route when wake is required and wake phrase is missing.
+        if getattr(self, "wake_required", True) and raw:
+            if not _is_strict_wake(raw):
+                # Treat anything without a strict wake phrase as background noise.
+                raw = ""
+        # --- End wake gate tuning ---
             if not raw:
                 continue
             print(f"[RAW] {raw}")
