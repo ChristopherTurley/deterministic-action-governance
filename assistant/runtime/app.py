@@ -354,6 +354,123 @@ class VeraApp:
             self._reminders = [x for x in self._reminders if not x["fired"]]
 
     def _capture_tasks(self, raw: str) -> str:
+        # --- Phase C micro-patch: patient _capture_tasks (v4) ---
+        raw0 = raw or ''
+        # --- Phase C micro-patch: time normalization (dot-time + ordinals) ---
+        # ASR fixes: '4th' -> '4', '4.30pm' -> '4:30 pm', '4.30 p.m.' -> '4:30 pm'
+        raw0 = re.sub(r'\bat\s+(\d{1,2})th\b', r'at \1', raw0, flags=re.IGNORECASE)
+        raw0 = re.sub(r'\b(\d{1,2})\.(\d{2})\s*(a\.?m\.?|p\.?m\.?)\b', r'\1:\2 \3', raw0, flags=re.IGNORECASE)
+        raw0 = re.sub(r'\b(\d{1,2})\.(\d{2})\b', r'\1:\2', raw0)
+        # --- end time normalization ---
+        try:
+            from assistant.router.core import _strip_wake as _sw
+            _hw, _rest = _sw(raw0)
+            if _hw:
+                raw0 = _rest
+        except Exception:
+            pass
+        raw0 = re.sub(r'^\s*hey\s*[, ]+\s*vera\b[\s,]*', '', raw0, flags=re.IGNORECASE)
+        raw0 = re.sub(r'^\s*vera\b[\s,]*', '', raw0, flags=re.IGNORECASE)
+        s = (raw0 or '').strip()
+        low = s.lower().strip(' \t\r\n.,!?;:')
+        if low == '' or low in ('!', '?', '.', ',', '...'):
+            return "Go ahead — I’m listening."
+        if re.match(r'^(my\s+)?tasks(\s+today)?\s+are\s*$', low):
+            return "Go ahead — tell me your tasks. You can say them slowly."
+        if low in ('my tasks', 'tasks', 'my tasks today', 'tasks today'):
+            return "Go ahead — tell me the tasks. Times are optional."
+        if s.endswith('?') and ('task' in low) and len(low.split()) <= 8:
+            return "Go ahead — tell me your tasks when you’re ready."
+        # If trailing ellipsis but a time is present, don't block processing
+        if s.endswith('...') and (not re.search(r"\bat\s+\d", low)):
+            return "Go ahead — I’m listening."
+        # --- end patient _capture_tasks (v4) ---
+        # --- Phase C micro-patch: intake cancel + pending-time (v6) (inside _capture_tasks) ---
+        s_in = (raw or '').strip()
+        low_in = s_in.lower().strip(' \t\r\n.,!?;:')
+        
+        # If user repeats assistant filler, don't treat it as a task
+        if low_in in ('go ahead', 'go ahead.', 'go ahead!', 'take your time', 'take your time.', 'yes', 'yeah', 'yep'):
+            return "Go ahead — tell me the full task list."
+        
+        # If user says something clearly not a task list during intake, prompt again (prevents 'you got this' getting captured)
+        if re.search(r'\b(you got this|that\s*is\s*all|thats all|that\'s all|just testing|test)\b', low_in):
+            return "Tell me your tasks for today (commas are fine)."
+        
+        # Pending time assignment: if we previously asked for a time, accept '<task> at <time>' now
+        pending = getattr(self, '_pending_time_for', None)
+        m = re.match(r'^(.+?)\s+at\s+(.+)$', low_in)
+        if pending and m:
+            tname = m.group(1).strip()
+            ttime = m.group(2).strip()
+            # Phase C micro-patch: extract first time token (v1)
+            # If ASR appends extra words/fragments, keep only the first time expression
+            mtime = re.search(r"(\d{1,2}(:\d{2})?\s*(a\.?m\.?|p\.?m\.?))", ttime)
+            if mtime:
+                ttime = mtime.group(1)
+
+            # Only apply if user is answering the pending task (contains the pending name)
+            if pending in tname:
+                applied = False
+                # Try a few common storage shapes safely
+                try:
+                    st = getattr(self.store, 'state', None)
+                    tasks = None
+                    if st is not None and hasattr(st, 'tasks'):
+                        tasks = st.tasks
+                    elif hasattr(self.store, 'tasks'):
+                        tasks = self.store.tasks
+                    if isinstance(tasks, list):
+                        for item in tasks:
+                            if isinstance(item, dict):
+                                txt = str(item.get('text','')).lower()
+                                if pending in txt and not item.get('time'):
+                                    item['time'] = ttime
+                                    applied = True
+                                    break
+                            else:
+                                # string task list fallback: can't safely set time
+                                pass
+                except Exception:
+                    pass
+                setattr(self, '_pending_time_for', None)
+                if applied:
+                    return f"Locked. {tname.title()} at {ttime}. Want me to build a focused schedule? Say: 'build my schedule'."
+                # If we couldn't apply, fall back to accepting it as-is (better than looping forever)
+                return f"Got it: {tname} at {ttime}. Want me to build a focused schedule? Say: 'build my schedule'."
+        # --- end v6 ---
+        # --- Phase C micro-patch: intake completeness guard (v5) ---
+        # If ASR returns a fragment, do NOT lock tasks yet.
+        frag = (raw0 if 'raw0' in locals() else (raw or '')).strip()
+        frag_low = frag.lower().strip(' \t\r\n.,!?;:')
+        # Very short fragments (e.g. 'my task') are almost never a complete list
+        if len(frag_low.split()) < 4:
+            return "Go ahead — keep going. Tell me the full task list."
+        # If it looks like a lead-in without any list structure, keep listening
+        has_list_signals = any(x in frag for x in [',', ' and ', ';']) or bool(re.search(r'\b(at|by)\s+\d', frag_low))
+        if (('task' in frag_low) or frag_low.startswith('my tasks')) and (not has_list_signals) and len(frag_low.split()) < 7:
+            return "Go ahead — tell me the tasks (you can separate them with commas)."
+        # --- end intake completeness guard (v5) ---
+        # --- Phase C micro-patch: patient task intake (wake strip + lead-in) ---
+        # Strip wake phrase during task intake so parsing is consistent
+        try:
+            from assistant.router.core import _strip_wake as _sw
+            _hw, _rest = _sw(raw)
+            if _hw:
+                raw = _rest
+        except Exception:
+            pass
+
+        _raw0 = (raw or '').strip()
+        _low0 = _raw0.lower().strip(' \t\r\n.,!?;:')
+        # Treat short lead-ins / questions as 'still talking' (do NOT capture yet)
+        if re.match(r'^(my\s+)?tasks(\s+today)?\s+are\s*$', _low0):
+            return "Take your time — I’m listening. Tell me your tasks (times optional)."
+        if _raw0.endswith('?') and len(_low0.split()) <= 5 and 'task' in _low0:
+            return "Tell me the tasks when you’re ready — you can say them naturally, even slowly."
+        if _raw0.endswith('...'):
+            return "Go ahead — I’m listening."
+        # --- end micro-patch ---
         """
         Phase 1 simple intake:
         - Supports comma-separated tasks
@@ -361,11 +478,21 @@ class VeraApp:
         - Adds reminders 10 min + 2 min before
         """
         text = (raw or "").strip()
+        # Phase C micro-patch: strip task-intake lead-in (v1)
+        text = re.sub(r"^\s*(my\s+)?tasks(\s+today)?\s+are\s+", "", text, flags=re.IGNORECASE)
+        # --- end micro-patch ---
+        # Phase C micro-patch: add-task lead-in normalize (v1)
+        # Allow natural phrasing: 'add task ...', 'new task ...', 'add ... to my tasks'
+        text = re.sub(r'^\s*(hey\s+vera\s*,?\s*)?', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'^\s*(add\s+(a\s+)?)?task\s*[:\-]?\s*', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'^\s*new\s+task\s*[:\-]?\s*', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'^\s*add\s+(.+)\s+to\s+my\s+tasks\s*[:\-]?\s*', r'\1', text, flags=re.IGNORECASE)
+        # --- end micro-patch ---
         if not text:
             return "Tell me your tasks for today. Example: finish Phase 1, create UI, walk Moose at 3pm."
 
         # Split tasks by comma
-        parts = [p.strip() for p in re.split(r",| and ", text) if p.strip()]
+        parts = [p.strip() for p in re.split(r",|\sand\s|;|\sthen\s|\snext\s", text, flags=re.IGNORECASE) if p.strip()]  # Phase C micro-patch: improved splitter (v1)
         added = 0
 
         for p in parts:
@@ -380,7 +507,8 @@ class VeraApp:
                 self._add_reminder(when - 2 * 60, f"Hey Mister Turley — you’re 2 minutes out from: {p}.")
 
         # If any mentions Moose/dog without time, prompt for time
-        if any(("moose" in t["text"].lower() or "dog" in t["text"].lower() or "walk" in t["text"].lower()) and not t["time"] for t in self._tasks):
+        if any(("walk" in t["text"].lower()) and not t["time"] for t in self._tasks):
+            self._pending_time_for = 'walk moose'
             return f"Locked {added} tasks. What time do you want to walk Moose? Say: 'walk Moose at 3pm'."
 
         return f"Locked {added} tasks. Want me to build a focused schedule for these? Say: 'build my schedule'."
@@ -444,9 +572,20 @@ class VeraApp:
 
         # Handle task intake (phase 1)
         if self._expecting_tasks and kind in ("LLM_FALLBACK", "NUDGE_WAKE"):
+            # --- Phase C micro-patch: intake cancel + pending-time (v6) ---
+            _r0 = (raw or '').strip().lower().strip(' \t\r\n.,!?;:')
+            if _r0 in ('cancel', 'never mind', 'nevermind', 'stop', 'stop intake', 'exit', 'quit', 'bye', 'bye now', 'goodbye'):
+                self._expecting_tasks = False
+                return "Okay — canceled task intake."
+            resp = self._capture_tasks(raw)
+            # Stay in intake mode for patience prompts
+            if isinstance(resp, str) and resp.startswith(('Take your time', 'Go ahead')):
+                return resp
+            # Stay in intake mode when asking for missing time
+            if isinstance(resp, str) and ('What time do you want' in resp):
+                return resp
             self._expecting_tasks = False
-            return self._capture_tasks(raw)
-
+            return resp
         if kind == "ASLEEP_IGNORE":
             return ""
         if kind == "WAKE":
@@ -466,7 +605,8 @@ class VeraApp:
             p = self.store.get_priority()
             priority_line = f"Top priority: {p}." if p else "You haven’t set a top priority yet."
             self._expecting_tasks = True
-            return f"Today is {date_str}. It’s {time_str}. {priority_line} Tell me your tasks for today—include times if you can. Example: finish Phase 1, create UI, walk Moose at 3pm."
+        # Phase C micro-patch: remove spoken example tasks (v1)
+            return f"Today is {date_str}. It’s {time_str}. {priority_line} Tell me your tasks for today—include times if you can."
         if kind == "SCREEN_SUMMARY":
             return "Screen summary is not available yet."
         if kind == "OPEN_LINK":
@@ -486,6 +626,13 @@ class VeraApp:
         if c in ("build my schedule", "build schedule", "make my schedule", "plan my day", "create my schedule"):
             return self._build_schedule()
 
+        # Phase C micro-patch: allow add-task outside intake (v1)
+        lc = (cleaned or '').lower().strip()
+        if kind == 'LLM_FALLBACK':
+            if re.match(r"^add\s+(a\s+)?task\b", lc) or lc.startswith('new task') or re.search(r"\badd\b.+\bto\s+my\s+tasks\b", lc):
+                return self._capture_tasks(raw)
+        # --- end micro-patch ---
+
         return "Ask me directly — I’ll answer."
 
     def run(self) -> None:
@@ -501,14 +648,45 @@ class VeraApp:
 
             if not DEMO_MODE:
                 print("[STAGE] LISTEN")
+            # --- Phase C micro-patch: listener patience by mode (v1) ---
+            # During task intake or pending-time follow-up, require a longer pause before cut-off
+            _in_intake = bool(getattr(self, '_expecting_tasks', False) or getattr(self, '_pending_time_for', None))
+            try:
+                if _in_intake:
+                    self.listener.silence_hold_sec = 0.90
+                    self.listener.hangover_sec = 0.35
+                    # Also require a minimum amount of speech before we allow endpointing
+                    self.listener.min_speech_sec = 1.25 if _in_intake else 0.60
+                    # Slightly relax silence threshold during intake to prevent slow-speech chop
+                    self.listener.silence_relax = 0.85 if _in_intake else 1.00
+                else:
+                    self.listener.silence_hold_sec = 0.55
+                    self.listener.hangover_sec = 0.25
+            except Exception:
+                pass
+            # --- end micro-patch ---
             raw = (self.listener.listen() or "").strip()
+            # Phase C micro-patch: echo suppression (v1)
+            # Drop mic input that matches what VERA just spoke (speaker -> mic bleed)
+            try:
+                if raw and hasattr(self, '_last_spoken_at'):
+                    if time.time() - float(getattr(self, '_last_spoken_at', 0)) < 2.5:
+                        n_raw = re.sub(r'\s+', ' ', raw.lower()).strip(' \t\r\n.,!?;:')
+                        n_last = re.sub(r'\s+', ' ', (getattr(self, '_last_spoken_text','') or '').lower()).strip(' \t\r\n.,!?;:')
+                        if n_raw and (n_raw in n_last or n_last in n_raw):
+                            raw = ''
+            except Exception:
+                pass
+            # --- end echo suppression ---
 
 
             # --- Wake gate tuning: silently ignore background audio/lyrics ---
             # Do not respond or route when wake is required and wake phrase is missing.
-            if getattr(self, 'wake_required', True) and raw:
+# --- Phase C micro-patch: disable strict wake gate during task intake ---
+            if getattr(self.cfg, 'wake_required', True) and (not getattr(self, '_expecting_tasks', False)) and raw:
                 if not _is_strict_wake(raw):
                     raw = ''
+            # --- end micro-patch ---
             # --- End wake gate tuning ---
             if not raw:
                 continue
