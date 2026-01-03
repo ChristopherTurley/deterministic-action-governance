@@ -40,6 +40,27 @@ except Exception:
     configure_sounddevice = None  # type: ignore
 
 from assistant.web.web_lookup import search_duckduckgo, spoken_compact, summarize
+from assistant.config import DEMO_MODE
+
+def _looks_like_tasks(raw: str) -> bool:
+    t = (raw or "").lower()
+    if "i need to " in t:
+        return True
+    if "walk moose at" in t:
+        return True
+    if t.count(",") >= 1:
+        return True
+    if " and " in t and ("finish " in t or "outline " in t or "walk " in t or "call " in t):
+        return True
+    return False
+
+def _is_partial_fragment(raw: str) -> bool:
+    t = (raw or "").strip()
+    if not t:
+        return False
+    if len(t) <= 10 and t.endswith("-"):
+        return True
+    return False
 
 # --- Wake filtering helpers (added) ---
 def _norm_text(t: str) -> str:
@@ -463,7 +484,8 @@ class VeraApp:
             # Reminders tick before listening
             self._tick_reminders()
 
-            print("[STAGE] LISTEN")
+            if not DEMO_MODE:
+                print("[STAGE] LISTEN")
             raw = (self.listener.listen() or "").strip()
 
 
@@ -478,7 +500,15 @@ class VeraApp:
             print(f"[RAW] {raw}")
             print(f"USER: {raw}")
 
+            # Demo polish: accept task intake without forcing the user to say 'start my day' first
+            if _is_partial_fragment(raw):
+                raw = ""
+            
             out = (self.process_one(raw) or "").strip()
+            if raw and _looks_like_tasks(raw) and "Ask me directly" in out:
+                # Auto-enter daily brief flow once, then retry original utterance
+                _ = (self.process_one("start my day") or "").strip()
+                out = (self.process_one(raw) or "").strip()
             if out:
                 print(f"VERA: {out}")
                 self.speak(out)

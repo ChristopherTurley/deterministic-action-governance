@@ -32,3 +32,4 @@ ASSISTANT_VOICE_NAME = "Ava"  # macOS voice name
 ASSISTANT_VOICE_RATE = 136         # words per minute (lower = calmer)
 ASSISTANT_VOICE_VOLUME = 1.0       # 0.0 – 1.0
 
+DEMO_MODE = True
