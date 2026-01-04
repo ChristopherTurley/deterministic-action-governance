@@ -368,6 +368,19 @@ class VeraApp:
             self._reminders = [x for x in self._reminders if not x["fired"]]
 
     def _capture_tasks(self, raw: str) -> str:
+
+        # NORMALIZE_DOTTED_AMPM: allow '11 p.m.' / '7 a.m.' formats for time parsing
+
+        try:
+
+            raw = re.sub(r"\b([ap])\.\s*m\.\b", r"\1m", raw, flags=re.IGNORECASE)
+
+            raw = re.sub(r"\b([ap])\.\s*m\b", r"\1m", raw, flags=re.IGNORECASE)
+
+        except Exception:
+
+            pass
+
         # --- Phase C micro-patch: patient _capture_tasks (v4) ---
         raw0 = raw or ''
         # --- Phase C micro-patch: time normalization (dot-time + ordinals) ---
