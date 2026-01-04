@@ -142,39 +142,54 @@ class VeraApp:
         return f"It’s {t}."
 
     def _handle_open_link(self, target) -> str:
+
+        # OPEN_LINK_STORE_FALLBACK_V1: robustly load last web results (store/in-memory)
+
+        try:
+
+            _t = str(target or '').strip().lower()
+
+            _t = re.sub(r'\s+', ' ', _t).strip(' \t\r\n.,!?;:')
+
+            _t = _t.replace('open one','1').replace('open two','2').replace('open three','3').replace('open to','2')
+
+            if _t.startswith('open '):
+
+                _t = _t.replace('open ','',1).strip()
+
+            target = _t
+
+        except Exception:
+
+            pass
+
+
+        links = None
+
+        try:
+
+            links = self.store.get_last_web()
+
+        except Exception:
+
+            links = None
+
+        if not links:
+
+            try:
+
+                links = getattr(self, '_last_web_items', None)
+
+            except Exception:
+
+                links = None
+
+        if not links:
+
+            return "I don't have any recent web results. Ask me to search the web first."
+
         import webbrowser
-
-        def _get_links():
-            for attr in ("_last_links", "_last_web_links", "_web_links", "_web_results", "_last_web_results", "links"):
-                v = getattr(self, attr, None)
-                if isinstance(v, list) and v:
-                    return v
-            st = getattr(self, "store", None)
-            if st is not None:
-                for attr in ("links", "_last_links", "_last_web_links", "_web_links"):
-                    v = getattr(st, attr, None)
-                    if isinstance(v, list) and v:
-                        return v
-                for meth in ("get_links", "last_links", "get_last_links"):
-                    fn = getattr(st, meth, None)
-                    if callable(fn):
-                        try:
-                            v = fn()
-                            if isinstance(v, list) and v:
-                                return v
-                        except Exception:
-                            pass
-                fn = getattr(st, "get", None)
-                if callable(fn):
-                    try:
-                        v = fn("links")
-                        if isinstance(v, list) and v:
-                            return v
-                    except Exception:
-                        pass
-            return []
-
-        links = _get_links()
+        # OPEN_LINK_FIX_V1: use links loaded from store/_last_web_items (do not overwrite)
         if not links:
             return "I don't have any recent web results. Ask me to search the web first."
 
@@ -230,6 +245,18 @@ class VeraApp:
         for r in results:
             items.append({"title": r.title, "url": r.url, "snippet": r.snippet})
         self.store.set_last_web(items)
+        # WEB_LOOKUP_MIRROR_LAST_V1: mirror last web items in-memory for open 1/2/3
+        try:
+            self._last_web_items = items
+        except Exception:
+            pass
+
+        # OPEN_FOLLOWUP_CAPTURE_V1: arm OPEN follow-up right after web lookup
+        try:
+            self._followup_mode = 'OPEN'
+        except Exception:
+            pass
+
         # FOLLOWUP_WINDOW_V1: allow 'open 1/2/3' without wake right after web results
         try:
             self._followup_until = time.time() + 25.0
@@ -726,6 +753,18 @@ class VeraApp:
             except Exception:
                 pass
             # --- end micro-patch ---
+            # OPEN_FOLLOWUP_CAPTURE_V1: short-command capture tuning for 'open 1/2/3'
+            try:
+                _mode = (getattr(self, '_followup_mode', '') or '').strip().upper()
+                if _mode == 'OPEN':
+                    # Make endpointing slightly more forgiving for very short commands
+                    self.listener.silence_hold_sec = 0.40
+                    self.listener.hangover_sec = 0.30
+                    self.listener.min_speech_sec = 0.20
+                    self.listener.silence_relax = 0.90
+            except Exception:
+                pass
+
             raw = (self.listener.listen() or "").strip()
             # HARD_SPEAK_LOCKOUT: never accept mic input immediately after VERA speaks
             # This prevents TTS -> mic bleed from being treated as user speech.
@@ -758,7 +797,17 @@ class VeraApp:
                         ):
                             raw = r0
                         else:
-                            raw = ''
+                            # OPEN_WHITELIST_V1: allow 'open 1/2/3' even during lockout cooldown
+                            try:
+                                _r0 = (raw or '').strip().lower()
+                                _r0 = re.sub(r'\s+', ' ', _r0).strip(' \t\r\n.,!?;:')
+                                _r0 = _r0.replace('open one','open 1').replace('open two','open 2').replace('open three','open 3').replace('open to','open 2')
+                                if _r0 in ('open 1','open 2','open 3'):
+                                    raw = _r0
+                                else:
+                                    raw = ''
+                            except Exception:
+                                raw = ''
                     else:
                         # Outside cooldown, keep normalized (helps routing reliability)
                         raw = r0
@@ -814,7 +863,20 @@ class VeraApp:
             except Exception:
                 _followup_active = False
             if getattr(self.cfg, 'wake_required', True) and (not getattr(self, '_expecting_tasks', False)) and (not _followup_active) and raw:
-                if not _is_strict_wake(raw):
+                # FOLLOWUP_OPEN_BYPASS_V1: allow 'open 1/2/3' after web results without wake
+                _skip_wake_gate = False
+                try:
+                    _mode = (getattr(self, '_followup_mode', '') or '').strip().upper()
+                    if _mode == 'OPEN' and raw:
+                        _r0 = (raw or '').strip().lower()
+                        _r0 = re.sub(r'\s+', ' ', _r0).strip(' \t\r\n.,!?;:')
+                        _r0 = _r0.replace('open one','open 1').replace('open two','open 2').replace('open three','open 3').replace('open to','open 2')
+                        if _r0 in ('open 1','open 2','open 3'):
+                            raw = _r0
+                            _skip_wake_gate = True
+                except Exception:
+                    _skip_wake_gate = False
+                if (not _skip_wake_gate) and (not _is_strict_wake(raw)):
                     raw = ''
             # --- end micro-patch ---
             # --- End wake gate tuning ---
