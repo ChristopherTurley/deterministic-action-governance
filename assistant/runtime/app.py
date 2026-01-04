@@ -230,6 +230,12 @@ class VeraApp:
         for r in results:
             items.append({"title": r.title, "url": r.url, "snippet": r.snippet})
         self.store.set_last_web(items)
+        # FOLLOWUP_WINDOW_V1: allow 'open 1/2/3' without wake right after web results
+        try:
+            self._followup_until = time.time() + 25.0
+        except Exception:
+            pass
+
 
         # Terminal print
         print("\n[WEB RESULTS]")
@@ -587,6 +593,27 @@ class VeraApp:
         if self._expecting_tasks:
             wake_required = False
 
+        # FOLLOWUP_WAKE_OVERRIDE_V1: during short follow-up windows, don't require wake for routing
+
+
+        try:
+
+
+            _fu = float(getattr(self, '_followup_until', 0.0))
+
+
+            if _fu and (time.time() < _fu):
+
+
+                wake_required = False
+
+
+        except Exception:
+
+
+            pass
+
+
         r = route_text(
             raw,
             wake_required=wake_required,
@@ -605,6 +632,13 @@ class VeraApp:
                 self._expecting_tasks = False
                 return "Okay — canceled task intake."
             resp = self._capture_tasks(raw)
+            # FOLLOWUP_WINDOW_V1: after locking tasks, allow immediate 'build my schedule' without wake
+            try:
+                if isinstance(resp, str) and resp.startswith('Locked'):
+                    self._followup_until = time.time() + 25.0
+            except Exception:
+                pass
+
             # Stay in intake mode for patience prompts
             if isinstance(resp, str) and resp.startswith(('Take your time', 'Go ahead')):
                 return resp
@@ -695,11 +729,39 @@ class VeraApp:
             raw = (self.listener.listen() or "").strip()
             # HARD_SPEAK_LOCKOUT: never accept mic input immediately after VERA speaks
             # This prevents TTS -> mic bleed from being treated as user speech.
+            # FOLLOWUP_WINDOW_V1: allow a tiny whitelist of explicit follow-up commands even inside cooldown.
             try:
                 _lsa = float(getattr(self, '_last_spoken_at', 0.0))
-                # 1.25s cooldown is intentional; it will drop any speech-over-TTS.
-                if raw and _lsa and (time.time() - _lsa) < 1.25:
-                    raw = ''
+                _fu = float(getattr(self, '_followup_until', 0.0))
+                _followup_active = bool(_fu and (time.time() < _fu))
+
+                if raw:
+                    r0 = raw.strip().lower()
+                    r0 = re.sub(r'\s+', ' ', r0).strip(' \t\r\n.,!?;:')
+
+                    # Normalize common STT variants for opening results
+                    r0 = r0.replace('open one', 'open 1')
+                    r0 = r0.replace('open two', 'open 2')
+                    r0 = r0.replace('open three', 'open 3')
+                    r0 = r0.replace('open to', 'open 2')
+
+                    # Normalize common schedule command variants
+                    if r0 in ('build schedule', 'make schedule', 'create schedule'):
+                        r0 = 'build my schedule'
+
+                    # 1.25s cooldown is intentional; drop most speech-over-TTS.
+                    # Exception: allow explicit follow-up commands during follow-up window.
+                    if r0 and _lsa and (time.time() - _lsa) < 1.25:
+                        if _followup_active and (
+                            re.fullmatch(r'open\s+\d+', r0) or
+                            r0 in ('build my schedule', 'plan my day')
+                        ):
+                            raw = r0
+                        else:
+                            raw = ''
+                    else:
+                        # Outside cooldown, keep normalized (helps routing reliability)
+                        raw = r0
             except Exception:
                 pass
 
@@ -744,7 +806,14 @@ class VeraApp:
             # --- Wake gate tuning: silently ignore background audio/lyrics ---
             # Do not respond or route when wake is required and wake phrase is missing.
 # --- Phase C micro-patch: disable strict wake gate during task intake ---
-            if getattr(self.cfg, 'wake_required', True) and (not getattr(self, '_expecting_tasks', False)) and raw:
+            # FOLLOWUP_WINDOW_V1: short no-wake window after prompts (web open, build schedule)
+            _followup_active = False
+            try:
+                _fu = float(getattr(self, '_followup_until', 0.0))
+                _followup_active = bool(_fu and (time.time() < _fu))
+            except Exception:
+                _followup_active = False
+            if getattr(self.cfg, 'wake_required', True) and (not getattr(self, '_expecting_tasks', False)) and (not _followup_active) and raw:
                 if not _is_strict_wake(raw):
                     raw = ''
             # --- end micro-patch ---
