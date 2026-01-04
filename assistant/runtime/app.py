@@ -104,7 +104,21 @@ class VeraApp:
 
     def speak(self, text: str) -> None:
         try:
-            self.speaker.say(text)
+            # HARD_SPEAK_LOCKOUT: speak in a blocking way when possible, then lock listening briefly
+            try:
+                if hasattr(self.speaker, 'say_blocking'):
+                    self.speaker.say_blocking(text)
+                else:
+                    self.speaker.say(text)
+            except Exception:
+                self.speaker.say(text)
+            self._last_spoken_text = text or ''
+            self._last_spoken_at = time.time()
+            # Note: we intentionally delay re-listening after TTS to prevent self-hearing
+            # SELF_TTS_GUARD: mark last spoken text/time so listener can suppress echo
+            self._last_spoken_text = text or ''
+            self._last_spoken_at = time.time()
+
         except Exception as e:
             print(f"[AUDIO] speak() failed: {e}")
 
@@ -666,15 +680,49 @@ class VeraApp:
                 pass
             # --- end micro-patch ---
             raw = (self.listener.listen() or "").strip()
+            # HARD_SPEAK_LOCKOUT: never accept mic input immediately after VERA speaks
+            # This prevents TTS -> mic bleed from being treated as user speech.
+            try:
+                _lsa = float(getattr(self, '_last_spoken_at', 0.0))
+                # 1.25s cooldown is intentional; it will drop any speech-over-TTS.
+                if raw and _lsa and (time.time() - _lsa) < 1.25:
+                    raw = ''
+            except Exception:
+                pass
+
             # Phase C micro-patch: echo suppression (v1)
             # Drop mic input that matches what VERA just spoke (speaker -> mic bleed)
+            # v2: This belongs in an audio adapter; v1: keep it conservative but robust
             try:
                 if raw and hasattr(self, '_last_spoken_at'):
-                    if time.time() - float(getattr(self, '_last_spoken_at', 0)) < 2.5:
-                        n_raw = re.sub(r'\s+', ' ', raw.lower()).strip(' \t\r\n.,!?;:')
-                        n_last = re.sub(r'\s+', ' ', (getattr(self, '_last_spoken_text','') or '').lower()).strip(' \t\r\n.,!?;:')
-                        if n_raw and (n_raw in n_last or n_last in n_raw):
+                    if time.time() - float(getattr(self, '_last_spoken_at', 0)) < 4.0:
+                        def _norm(x):
+                            x = (x or '').lower()
+                            x = re.sub(r'\s+', ' ', x)
+                            x = x.strip(' \t\r\n.,!?;:')
+                            return x
+                        def _tokset(x):
+                            x = _norm(x)
+                            # keep words and digits chunks (handles "804pm" variations)
+                            toks = re.findall(r"[a-z0-9']+", x)
+                            return set(toks)
+
+                        n_raw = _norm(raw)
+                        n_last = _norm(getattr(self, '_last_spoken_text','') or '')
+
+                        # Fast path: substring containment
+                        if n_raw and n_last and (n_raw in n_last or n_last in n_raw):
                             raw = ''
+
+                        # Robust path: token overlap similarity
+                        if raw:
+                            a = _tokset(raw)
+                            b = _tokset(getattr(self, '_last_spoken_text','') or '')
+                            if a and b:
+                                overlap = len(a & b) / float(min(len(a), len(b)))
+                                # If most of the smaller set overlaps, it's almost certainly self-echo
+                                if overlap >= 0.65:
+                                    raw = ''
             except Exception:
                 pass
             # --- end echo suppression ---
