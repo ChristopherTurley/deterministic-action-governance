@@ -139,12 +139,12 @@
     {
       "id": "t11",
       "input": {
-        "raw_text": "set priority to 2",
+        "raw_text": "what is my priority",
         "awake": true,
         "wake_required": false
       },
       "assert": {
-        "route_kind_equals": "PRIORITY_SET"
+        "route_kind_equals": "PRIORITY_GET"
       }
     },
     {
