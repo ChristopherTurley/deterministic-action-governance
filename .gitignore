@@ -9,6 +9,8 @@
 !assistant/**
 
 !run_vera.py
+!run_vera_v2.py
+
 !v2/
 !v2/**
 
