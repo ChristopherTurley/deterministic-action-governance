@@ -6,6 +6,8 @@ from typing import Any, Dict
 
 from assistant.runtime.app import VeraApp, configure_sounddevice, GREET_TEXT, DEMO_MODE
 from v2.engine_adapter import EngineInput, run_engine_via_v1
+from v2.runtime_executor import execute_actions
+from v2.accountability import apply_declared, apply_receipts
 
 
 class VeraAppV2Bridge(VeraApp):
@@ -47,6 +49,29 @@ class VeraAppV2Bridge(VeraApp):
             pds=None,
         )
         out = run_engine_via_v1(inp)
+
+        try:
+            if not hasattr(self, "_pds") or getattr(self, "_pds") is None:
+                self._pds = {}
+        except Exception:
+            self._pds = {}
+
+        request_id = "r" + str(int(time.time() * 1000.0))
+        try:
+            self._pds = apply_declared(getattr(self, "_pds", {}) or {}, request_id, out)
+        except Exception:
+            pass
+
+        exec_text = ""
+        receipts = []
+        try:
+            exec_text, receipts = execute_actions(self, request_id, getattr(out, "actions", []) or [])
+        except Exception:
+            exec_text, receipts = "", []
+        try:
+            self._pds = apply_receipts(getattr(self, "_pds", {}) or {}, receipts)
+        except Exception:
+            pass
 
         kind = str(getattr(out, "route_kind", "") or "LLM_FALLBACK")
         debug = getattr(out, "debug", {}) or {}

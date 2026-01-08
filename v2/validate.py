@@ -10,11 +10,17 @@ def _to_obj(x: Any) -> Any:
     return x
 
 
+_ALLOWED_ACTIONS = {
+    "NOOP",
+    "OPEN_LINK_INDEX",
+    "WEB_LOOKUP_QUERY",
+    "SPOTIFY_COMMAND",
+    "STATE_SET_AWAKE",
+    "ENTER_TASK_INTAKE",
+}
+
+
 def validate_engine_output(obj: Any) -> Tuple[bool, str]:
-    """
-    Minimal deterministic validator for EngineOutput contract.
-    Enforces Trust without external dependencies.
-    """
     o = _to_obj(obj)
     if not isinstance(o, dict):
         return False, "EngineOutput must be a dict-like object"
@@ -42,13 +48,40 @@ def validate_engine_output(obj: Any) -> Tuple[bool, str]:
             return False, f"actions[{i}].type must be non-empty string"
         if not isinstance(a["payload"], dict):
             return False, f"actions[{i}].payload must be dict"
-        # Allowed action types at router-boundary
-        if a["type"] not in ["OPEN_LINK_INDEX", "NOOP"]:
-            return False, f"actions[{i}].type not allowed: {a['type']}"
 
-        if a["type"] == "OPEN_LINK_INDEX":
-            if "target" not in a["payload"]:
+        t = a["type"]
+        if t not in _ALLOWED_ACTIONS:
+            return False, f"actions[{i}].type not allowed: {t!r}"
+
+        p = a["payload"]
+
+        if t == "OPEN_LINK_INDEX":
+            if "target" not in p:
                 return False, "OPEN_LINK_INDEX payload must include target"
+            tgt = p.get("target", None)
+            if tgt is not None and not isinstance(tgt, (int, str)):
+                return False, "OPEN_LINK_INDEX target must be int, str, or None"
+
+        if t == "WEB_LOOKUP_QUERY":
+            q = p.get("query", None)
+            if not isinstance(q, str) or not q.strip():
+                return False, "WEB_LOOKUP_QUERY query must be non-empty string"
+
+        if t == "SPOTIFY_COMMAND":
+            cmd = p.get("cmd", None)
+            if not isinstance(cmd, str) or not cmd.strip():
+                return False, "SPOTIFY_COMMAND cmd must be non-empty string"
+            q = p.get("query", None)
+            if q is not None and not isinstance(q, str):
+                return False, "SPOTIFY_COMMAND query must be string or None"
+
+        if t == "STATE_SET_AWAKE":
+            if "awake" not in p or not isinstance(p.get("awake"), bool):
+                return False, "STATE_SET_AWAKE awake must be bool"
+
+        if t == "ENTER_TASK_INTAKE":
+            if "enabled" not in p or not isinstance(p.get("enabled"), bool):
+                return False, "ENTER_TASK_INTAKE enabled must be bool"
 
     if not isinstance(o["state_delta"], dict):
         return False, "state_delta must be dict"
@@ -56,7 +89,6 @@ def validate_engine_output(obj: Any) -> Tuple[bool, str]:
     if o["mode_set"] not in ["IDLE", "INTAKE", "FOLLOWUP_OPEN", "FOLLOWUP_SCHEDULE"]:
         return False, "mode_set invalid"
 
-    # followup_until_utc must be None or string (runtime-owned; usually None)
     if o["followup_until_utc"] is not None and not isinstance(o["followup_until_utc"], str):
         return False, "followup_until_utc must be None or string"
 

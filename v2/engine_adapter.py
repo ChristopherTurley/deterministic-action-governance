@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
@@ -39,21 +40,13 @@ def _error_output(code: str, detail: str) -> EngineOutput:
         followup_until_utc=None,
         debug={"error": detail},
     )
-    ok, err = validate_named("EngineOutput", out)
+    ok, _ = validate_named("EngineOutput", out)
     if ok:
         return out
-    # If schema validation itself is unavailable, still return deterministic object.
     return out
 
 
 def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
-    """
-    v2 boundary adapter (router-level):
-    - Calls v1 route_text (deterministic)
-    - Emits route_kind + meta-derived declared actions
-    - Does NOT attempt to speak or execute side effects (runtime owns that)
-    - Validates EngineOutput against v2/schema.json (fail closed)
-    """
     raw = (inp.raw_text or "").strip()
 
     try:
@@ -75,17 +68,38 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
     meta = getattr(rr, "meta", {}) or {}
 
     actions: List[Dict[str, Any]] = []
+
     if kind == "OPEN_LINK":
         target = meta.get("target", None)
-        if isinstance(target, int):
-            actions.append({"type": "OPEN_LINK_INDEX", "payload": {"target": target}})
-        else:
-            actions.append({"type": "OPEN_LINK_INDEX", "payload": {"target": None}})
+        actions.append({"type": "OPEN_LINK_INDEX", "payload": {"target": target}})
 
-    followup_until_utc: Optional[str] = None  # runtime-owned
+    if kind == "WEB_LOOKUP":
+        q = meta.get("query", None)
+        if not isinstance(q, str) or not q.strip():
+            q = (getattr(rr, "cleaned", "") or "").strip()
+        actions.append({"type": "WEB_LOOKUP_QUERY", "payload": {"query": str(q)}})
 
-    # Minimal deterministic state delta for awake/mode only
+    if kind == "SPOTIFY":
+        cmd = meta.get("cmd", "")
+        q = meta.get("query", None)
+        payload: Dict[str, Any] = {"cmd": str(cmd)}
+        if q is not None:
+            payload["query"] = str(q)
+        actions.append({"type": "SPOTIFY_COMMAND", "payload": payload})
+
+    if kind == "WAKE":
+        actions.append({"type": "STATE_SET_AWAKE", "payload": {"awake": True}})
+
+    if kind == "SLEEP":
+        actions.append({"type": "STATE_SET_AWAKE", "payload": {"awake": False}})
+
+    if kind == "START_DAY":
+        actions.append({"type": "ENTER_TASK_INTAKE", "payload": {"enabled": True}})
+
+    followup_until_utc: Optional[str] = None
+
     mode_set = "IDLE"
+
     if kind == "WAKE":
         delta = {"awake": True, "mode": mode_set}
     elif kind == "SLEEP":
@@ -98,6 +112,8 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
     except Exception:
         delta = {}
 
+    debug = {"meta": meta, "raw_len": len(raw), "ts_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+
     out = EngineOutput(
         route_kind=str(kind),
         speak_text="",
@@ -105,7 +121,7 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
         state_delta=delta,
         mode_set=mode_set,
         followup_until_utc=followup_until_utc,
-        debug={"meta": meta, "raw_len": len(raw)},
+        debug=debug,
     )
 
     ok, err = validate_named("EngineOutput", out)
