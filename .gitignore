@@ -30,3 +30,6 @@ _archive/
 
 v2/_pds/
 v2/_pds/**
+
+v2/_pds/_debug/
+v2/_pds/_debug/**
