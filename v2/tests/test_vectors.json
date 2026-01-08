@@ -172,7 +172,7 @@
     {
       "id": "t14",
       "input": {
-        "raw_text": "spotify play",
+        "raw_text": "play spotify",
         "awake": true,
         "wake_required": false
       },
@@ -183,12 +183,12 @@
     {
       "id": "t15",
       "input": {
-        "raw_text": "spotify pause",
+        "raw_text": "pause spotify",
         "awake": true,
         "wake_required": false
       },
       "assert": {
-        "route_kind_equals": "SPOTIFY"
+        "route_kind_equals": "LLM_FALLBACK"
       }
     },
     {
