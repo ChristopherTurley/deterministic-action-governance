@@ -246,6 +246,27 @@
         },
         "momentum": {
           "$ref": "#/$defs/Momentum"
+        },
+        "actions_declared": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ActionRecord"
+          },
+          "default": []
+        },
+        "actions_executed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Outcome"
+          },
+          "default": []
         }
       },
       "required": [
@@ -441,6 +462,81 @@
         "score",
         "reasons",
         "updated_utc"
+      ]
+    },
+    "ActionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload": {
+          "type": "object",
+          "default": {}
+        },
+        "declared_utc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ISODateTime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "payload",
+        "declared_utc"
+      ]
+    },
+    "Outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "SUCCESS",
+            "FAIL",
+            "SKIP"
+          ],
+          "default": "SUCCESS"
+        },
+        "detail": {
+          "type": "string",
+          "default": ""
+        },
+        "recorded_utc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ISODateTime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "action_id",
+        "status",
+        "detail",
+        "recorded_utc"
       ]
     }
   }
