@@ -232,7 +232,7 @@
         "wake_required": false
       },
       "assert": {
-        "route_kind_equals": "NUDGE_WAKE"
+        "route_kind_equals": "ASLEEP_IGNORE"
       }
     },
     {
