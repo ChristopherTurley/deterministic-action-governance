@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vera-v2-execution-substrate-schema",
+  "title": "VERA v2 Boundary Contract + Persistent Daily State",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "EngineInput": { "$ref": "#/$defs/EngineInput" },
+    "EngineOutput": { "$ref": "#/$defs/EngineOutput" },
+    "PersistentDailyState": { "$ref": "#/$defs/PersistentDailyState" }
+  },
+  "required": ["EngineInput", "EngineOutput", "PersistentDailyState"],
+  "$defs": {
+    "ISODate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "ISODateTime": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+
+    "EngineMode": { "type": "string", "enum": ["IDLE", "INTAKE", "FOLLOWUP_OPEN", "FOLLOWUP_SCHEDULE"] },
+
+    "RouteKind": {
+      "type": "string",
+      "description": "v1 RouteResult.kind passthrough (authoritative selector).",
+      "minLength": 1
+    },
+
+    "ActionType": {
+      "type": "string",
+      "description": "Declared boundary actions. These are intents; execution is owned by the shell/runtime.",
+      "enum": ["OPEN_LINK_INDEX", "NOOP"]
+    },
+
+    "Action": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "$ref": "#/$defs/ActionType" },
+        "payload": { "type": "object", "default": {} }
+      },
+      "required": ["type", "payload"]
+    },
+
+    "EngineInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "raw_text": { "type": "string" },
+        "timestamp_utc": { "$ref": "#/$defs/ISODateTime" },
+        "wake_required": { "type": "boolean", "default": true },
+        "priority_enabled": { "type": "boolean", "default": true },
+        "awake": { "type": "boolean", "default": true },
+        "context": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "local_date": { "$ref": "#/$defs/ISODate" },
+            "local_time": { "type": "string" },
+            "active_app": { "type": "string" },
+            "screen_hint": { "type": "string" }
+          },
+          "default": {}
+        },
+        "pds": { "$ref": "#/$defs/PersistentDailyState" }
+      },
+      "required": ["raw_text"]
+    },
+
+    "EngineOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "route_kind": { "$ref": "#/$defs/RouteKind" },
+        "speak_text": {
+          "type": "string",
+          "description": "Router-boundary speak is empty by design. Speaking belongs to runtime/app shell.",
+          "default": ""
+        },
+        "actions": { "type": "array", "items": { "$ref": "#/$defs/Action" }, "default": [] },
+        "state_delta": { "type": "object", "default": {} },
+        "mode_set": { "$ref": "#/$defs/EngineMode" },
+        "followup_until_utc": {
+          "description": "Not available at router-boundary (runtime owns followup windows).",
+          "anyOf": [{ "$ref": "#/$defs/ISODateTime" }, { "type": "null" }],
+          "default": null
+        },
+        "debug": { "type": "object", "additionalProperties": true, "default": {} }
+      },
+      "required": ["route_kind", "speak_text", "actions", "state_delta", "mode_set", "followup_until_utc", "debug"]
+    },
+
+    "PersistentDailyState": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": { "type": "integer", "const": 1 },
+        "local_date": { "$ref": "#/$defs/ISODate" },
+        "mode": { "$ref": "#/$defs/EngineMode" },
+        "awake": { "type": "boolean" },
+        "followup": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "open": { "type": "boolean", "default": false },
+            "until_utc": { "anyOf": [{ "$ref": "#/$defs/ISODateTime" }, { "type": "null" }], "default": null },
+            "expects": { "type": "string", "default": "" }
+          },
+          "required": ["open", "until_utc", "expects"],
+          "default": { "open": false, "until_utc": null, "expects": "" }
+        }
+      },
+      "required": ["schema_version", "local_date", "mode", "awake", "followup"]
+    }
+  }
+}
