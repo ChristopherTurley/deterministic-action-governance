@@ -27,3 +27,6 @@ _archive/
 *.bak_*
 *.before_*
 *.broken_*
+
+v2/_pds/
+v2/_pds/**
