@@ -14,24 +14,64 @@ def _as_list(x: Any) -> List[Any]:
     return x if isinstance(x, list) else []
 
 
-def apply_declared(pds: Dict[str, Any], request_id: str, out: Any) -> Dict[str, Any]:
-    o = _to_obj(out)
-    if pds is None:
-        pds = {}
-    p = dict(pds)
+def apply_declared(pds: Dict[str, Any], *args: Any) -> Dict[str, Any]:
+    """
+    Deterministic, fail-closed declared-action logger.
 
-    declared = _as_list(p.get("actions_declared"))
-    entry = {
-        "request_id": request_id,
-        "route_kind": str(o.get("route_kind", "")),
-        "actions": _as_list(o.get("actions")),
-        "ts_utc": (o.get("debug") or {}).get("ts_utc", None) if isinstance(o.get("debug"), dict) else None,
-    }
-    declared.append(entry)
-    p["actions_declared"] = declared
+    Accepts any of these call styles (tolerant by design):
+      1) apply_declared(pds, request_id: str, out: Any)
+      2) apply_declared(pds, actions: list)
+      3) apply_declared(pds, request_id: str, actions: list)
 
-    return p
+    Never throws. If inputs are unexpected, returns pds unchanged.
+    """
+    try:
+        if pds is None:
+            pds = {}
+        p = dict(pds)
 
+        request_id = None
+        out_obj = None
+        actions = None
+
+        if len(args) == 2:
+            request_id = args[0] if isinstance(args[0], str) else None
+            if isinstance(args[1], list):
+                actions = args[1]
+            else:
+                out_obj = args[1]
+        elif len(args) == 1:
+            if isinstance(args[0], list):
+                actions = args[0]
+            else:
+                out_obj = args[0]
+        elif len(args) >= 3:
+            request_id = args[0] if isinstance(args[0], str) else None
+            if isinstance(args[1], list):
+                actions = args[1]
+            else:
+                out_obj = args[1]
+            if actions is None and isinstance(args[2], list):
+                actions = args[2]
+
+        o = _to_obj(out_obj) if out_obj is not None else {}
+        if actions is None:
+            actions = _as_list(o.get('actions')) if isinstance(o, dict) else []
+        else:
+            actions = _as_list(actions)
+
+        declared = _as_list(p.get('actions_declared'))
+        entry = {
+            'request_id': request_id,
+            'route_kind': str(o.get('route_kind', '')) if isinstance(o, dict) else '',
+            'actions': actions,
+            'ts_utc': (o.get('debug') or {}).get('ts_utc', None) if isinstance(o, dict) else None,
+        }
+        declared.append(entry)
+        p['actions_declared'] = declared
+        return p
+    except Exception:
+        return dict(pds or {})
 
 def apply_receipts(pds: Dict[str, Any], receipts: List[Dict[str, Any]]) -> Dict[str, Any]:
     if pds is None:
