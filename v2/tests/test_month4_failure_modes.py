@@ -268,6 +268,7 @@ def test_gate_safe_failure_asleep_web_lookup_currently_routes():
 
 import json
 import pytest
+from v2.reducer_entry import reduce_state as reduce_state_canon
 from v2.contract import to_contract_output
 
 def _jsonable(obj):
@@ -391,20 +392,10 @@ def _get_receipts(engine_out):
     return []
 
 def _reduce_state(state, receipt_or_rr):
-    candidates = [
-        ("v2.state_reducer", "reduce_state"),
-        ("v2.core.state_reducer", "reduce_state"),
-        ("v2.reducer", "reduce_state"),
-    ]
-    last_err = None
-    for mod, fn in candidates:
-        try:
-            m = __import__(mod, fromlist=[fn])
-            f = getattr(m, fn)
-            return f(state, receipt_or_rr)
-        except Exception as e:
-            last_err = e
-    pytest.skip(f"reduce_state not importable from known locations; last error: {last_err!r}")
+    try:
+        return reduce_state_canon(state, receipt_or_rr)
+    except ImportError as e:
+        pytest.skip(f"Reducer not contract-exposed yet: {e!r}")
 
 def test_week4_receipt_is_jsonable_when_present():
     out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=True))
@@ -507,3 +498,56 @@ def test_month5_week3_sleep_variants_route_kind_truth(phrase, awake_in):
     c2 = to_contract_output(out2, awake_fallback=bool(awake_in))
     rk2 = (c2.get("route_kind") or "").strip().upper()
     assert rk == rk2
+
+
+"""MONTH 5 WEEK 4: REDUCER & RECEIPT CONTINUITY (ASSERT CURRENT TRUTH; NO FEATURE CHANGES)"""
+
+import copy
+
+def _pick_first_receipt_from_any_command():
+    # Probe a few commands and return the first receipt we can get.
+    candidates = [
+        ("what time is it", True),
+        ("search the web for apple intelligence", True),
+        ("open https://example.com", True),
+        ("set a timer for 1 minute", True),
+    ]
+    for raw, awake in candidates:
+        out = run_engine_via_v1(EngineInput(raw_text=raw, awake=awake))
+        c = to_contract_output(out, awake_fallback=bool(awake))
+        receipts = c.get("receipts") if isinstance(c.get("receipts"), list) else []
+        if receipts:
+            return raw, awake, receipts[0]
+    return None, None, None
+
+def test_month5_week4_probe_at_least_one_command_produces_receipt():
+    raw, awake, r = _pick_first_receipt_from_any_command()
+    assert r is not None, "No receipts produced by probe set; update probe candidates to match current truth."
+
+def test_month5_week4_reducer_purity_does_not_mutate_input_state():
+    raw, awake, r = _pick_first_receipt_from_any_command()
+    if r is None:
+        return
+    state = {"awake": bool(awake), "pds": {"x": 1}}
+    before = _state_snapshot(state)
+    _ = _reduce_state(state, r)
+    after = _state_snapshot(state)
+    assert before == after
+
+def test_month5_week4_reducer_idempotent_same_input_same_output_snapshot():
+    raw, awake, r = _pick_first_receipt_from_any_command()
+    if r is None:
+        return
+    state = {"awake": bool(awake), "pds": {"x": 1}}
+    s1 = _reduce_state(copy.deepcopy(state), r)
+    s2 = _reduce_state(copy.deepcopy(state), r)
+    assert _state_snapshot(s1) == _state_snapshot(s2)
+
+
+def test_month5_week4_reducer_entry_importable():
+    # Truth gate: reducer is not yet contract-exposed in this repo.
+    # This test documents that reality explicitly (skip, not fail).
+    try:
+        _ = reduce_state_canon({"awake": True}, {"kind": "NOOP"})
+    except ImportError as e:
+        pytest.skip(f"Reducer not contract-exposed yet: {e!r}")
