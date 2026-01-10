@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import time
+import os
+import fcntl
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -33,6 +35,36 @@ def _log_debug(event: str, payload: Dict[str, Any]) -> None:
         fp.write_text(fp.read_text(encoding="utf-8") + json.dumps(rec, ensure_ascii=False) + "\n", encoding="utf-8") if fp.exists() else fp.write_text(json.dumps(rec, ensure_ascii=False) + "\n", encoding="utf-8")
     except Exception:
         pass
+
+
+
+
+def _lock_file_path() -> Path:
+    # Keep lock in debug dir so it never leaks into PDS
+    fp = Path("v2") / "_pds" / "_debug" / "vera_v2_bridge.lock"
+    fp.parent.mkdir(parents=True, exist_ok=True)
+    return fp
+
+
+def _acquire_single_instance_lock() -> int:
+    """
+    Hard single-boot guarantee:
+    - If another v2 bridge process is running, exit immediately.
+    - Ensures exactly one owner of mic + speaker loop.
+    Returns an OS-level file descriptor kept open for the process lifetime.
+    """
+    fp = _lock_file_path()
+    fd = os.open(str(fp), os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        # Another process holds the lock
+        try:
+            os.close(fd)
+        except Exception:
+            pass
+        raise SystemExit("VERA v2 bridge already running (lock held). Exiting to prevent duplicate boot/audio.")
+    return fd
 
 
 def _strip_debug_fields(pds: Dict[str, Any]) -> Dict[str, Any]:
@@ -84,6 +116,11 @@ class VeraAppV2Bridge(VeraApp):
 
         _log_debug("BOOT", {"date": self._pds.get("date"), "awake": self._pds.get("awake")})
 
+        # Boot-time speech de-dup (prevents double greeting)
+        self._boot_utc = time.time()
+        self._last_spoken_text = ""
+        self._last_spoken_ts = 0.0
+
     def _persist_if_dirty(self) -> None:
         if not getattr(self, "_pds_dirty", False):
             return
@@ -92,6 +129,33 @@ class VeraAppV2Bridge(VeraApp):
             self._pds_dirty = False
         except Exception:
             pass
+
+
+
+    def speak(self, text: str) -> None:
+        """
+        Single-boot soft guarantee:
+        - Suppress exact duplicate speech within a short window right after boot.
+        - Prevents double greeting / repeated init lines without changing normal behavior.
+        """
+        t = (text or "").strip()
+        if not t:
+            return
+
+        now = time.time()
+        boot_age = now - float(getattr(self, "_boot_utc", now))
+
+        last_t = str(getattr(self, "_last_spoken_text", "") or "")
+        last_ts = float(getattr(self, "_last_spoken_ts", 0.0))
+
+        # Only de-dup during early boot window, and only exact duplicates in quick succession
+        if boot_age <= 6.0 and t == last_t and (now - last_ts) <= 2.0:
+            _log_debug("SPEAK_DEDUP", {"text": t[:120], "boot_age_s": boot_age})
+            return
+
+        setattr(self, "_last_spoken_text", t)
+        setattr(self, "_last_spoken_ts", now)
+        return super().speak(t)
 
     def process_one(self, raw: str) -> str:
         raw_clean = (raw or "").strip()
@@ -160,12 +224,19 @@ class VeraAppV2Bridge(VeraApp):
         except KeyboardInterrupt:
             _log_debug("EXIT", {"reason": "KeyboardInterrupt"})
             return
-
-
 def run() -> None:
-    app = VeraAppV2Bridge()
-    app.run()
+    # Hard single-instance guard (prevents duplicate greeting/audio init)
+    _lock_fd = _acquire_single_instance_lock()
+    try:
+        app = VeraAppV2Bridge()
+        app.run()
+    finally:
+        try:
+            os.close(_lock_fd)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
     run()
+
