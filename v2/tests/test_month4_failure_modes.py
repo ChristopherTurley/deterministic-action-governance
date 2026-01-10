@@ -812,3 +812,28 @@ def test_month7_week4_audit_deterministic_for_same_input():
         s2 = _reduce_state(s2, x)
 
     assert _state_snapshot(s1) == _state_snapshot(s2)
+
+
+"""MONTH 8 WEEK 1: SIDE-EFFECT POLICY (DEFAULT SAFE)"""
+
+def test_month8_week1_all_actions_blocked_by_default():
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions")
+    from v2.action_executor_entry import execute_actions
+
+    results = execute_actions(actions, dry_run=False)
+    assert isinstance(results, list)
+
+    for r in results:
+        assert r.get("type") == "ACTION_BLOCKED_POLICY"
+        assert r.get("blocked_reason") == "default_safe"
+
+def test_month8_week1_blocked_actions_produce_receipts():
+    out = run_engine_via_v1(EngineInput(raw_text="search the web for apple intelligence", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions")
+    from v2.action_executor_entry import execute_actions
+
+    results = execute_actions(actions, dry_run=False)
+    assert len(results) == len(actions)
