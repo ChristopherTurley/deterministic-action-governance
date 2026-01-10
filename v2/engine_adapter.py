@@ -162,14 +162,13 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
     rk = str(getattr(rr, "route_kind", "") or "").strip().upper()
 
     # TIME (read-only, but must be explicit for receipts)
-    if rk == "TIME":
+    if rk == "TIME" or kind == "TIME":
         actions.append({"type": "TIME_READ", "payload": {}})
 
     # PRIORITY
-    if rk == "PRIORITY_GET":
+    if rk == "PRIORITY_GET" or kind == "PRIORITY_GET":
         actions.append({"type": "PRIORITY_GET", "payload": {}})
-
-    if rk == "PRIORITY_SET":
+    if rk == "PRIORITY_SET" or kind == "PRIORITY_SET":
         pld = meta if isinstance(meta, dict) else {}
         actions.append({"type": "PRIORITY_SET", "payload": pld})
 
