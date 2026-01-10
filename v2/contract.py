@@ -79,3 +79,49 @@ def apply_contract(engine_out: Any, *, awake_fallback: bool) -> Any:
 
     return engine_out
 
+# === MONTH6W3_CANONICAL_CONTRACT ===
+
+def _m6w3_normalize_receipt(r):
+    if r is None:
+        return {"type": "UNKNOWN", "payload": {}}
+    if isinstance(r, dict):
+        t = r.get("type") or r.get("kind") or r.get("route_kind") or "UNKNOWN"
+        t = str(t).strip() or "UNKNOWN"
+        payload = r.get("payload")
+        if not isinstance(payload, dict):
+            payload = r.get("data") if isinstance(r.get("data"), dict) else {}
+        return {"type": t, "payload": payload}
+    t = getattr(r, "type", None) or getattr(r, "kind", None) or getattr(r, "route_kind", None) or "UNKNOWN"
+    t = str(t).strip() or "UNKNOWN"
+    payload = getattr(r, "payload", None)
+    if not isinstance(payload, dict):
+        payload = {}
+    return {"type": t, "payload": payload}
+
+def _m6w3_canonicalize_contract_output(c):
+    if not isinstance(c, dict):
+        c = {"route_kind": str(c), "receipts": [], "actions": []}
+
+    rk = c.get("route_kind")
+    if not isinstance(rk, str) or not rk.strip():
+        c["route_kind"] = "UNKNOWN"
+
+    receipts = c.get("receipts")
+    actions = c.get("actions")
+
+    if not isinstance(receipts, list):
+        receipts = []
+    if not isinstance(actions, list):
+        actions = []
+
+    c["receipts"] = [_m6w3_normalize_receipt(r) for r in receipts]
+    c["actions"] = [a if isinstance(a, dict) else {"_repr": repr(a)} for a in actions]
+    return c
+
+# Wrap to_contract_output so every internal return path becomes canonical.
+_to_contract_output_impl_m6w3 = to_contract_output
+
+def to_contract_output(*args, **kwargs):
+    c = _to_contract_output_impl_m6w3(*args, **kwargs)
+    return _m6w3_canonicalize_contract_output(c)
+

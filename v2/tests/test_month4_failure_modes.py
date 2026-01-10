@@ -614,3 +614,27 @@ def test_month6_week2_reducer_does_not_write_unknown_top_level_keys():
     new_state = _reduce_state(state, r)
     d = _as_jsonable_state(new_state)
     assert d.get("DO_NOT_TOUCH") == {"x": 1}
+
+
+"""MONTH 6 WEEK 3: CONTRACT RECEIPT NORMALIZATION (ASSERT SHAPE)"""
+
+def test_month6_week3_contract_has_canonical_lists():
+    out = run_engine_via_v1(EngineInput(raw_text="search the web for apple intelligence", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    assert isinstance(c, dict)
+    rk = (c.get("route_kind") or "").strip()
+    assert rk
+    assert isinstance(c.get("receipts"), list)
+    assert isinstance(c.get("actions"), list)
+
+def test_month6_week3_receipts_are_normalized_dicts():
+    out = run_engine_via_v1(EngineInput(raw_text="search the web for apple intelligence", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    receipts = c.get("receipts")
+    assert isinstance(receipts, list)
+    for r in receipts:
+        assert isinstance(r, dict)
+        t = (r.get("type") or "").strip()
+        assert t
+        payload = r.get("payload")
+        assert isinstance(payload, dict)
