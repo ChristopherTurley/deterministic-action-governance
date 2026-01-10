@@ -262,3 +262,72 @@ def test_gate_safe_failure_asleep_web_lookup_currently_routes():
     rr = _route_text("search the web for tesla stock", state={"awake": False}, awake=False, wake_required=False)
     rk = _get_route_kind(rr)
     assert isinstance(rk, str) and rk.strip()
+
+
+"""MONTH 4 WEEK 3: STATE TRANSITION GUARANTEES (ASSERT CURRENT TRUTH; NO FEATURE CHANGES)"""
+
+import json
+import pytest
+
+def _jsonable(obj):
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return obj
+    to_dict = getattr(obj, "to_dict", None)
+    if callable(to_dict):
+        return to_dict()
+    d = getattr(obj, "__dict__", None)
+    if isinstance(d, dict):
+        return d
+    try:
+        return json.loads(json.dumps(obj, default=str))
+    except Exception:
+        return {"_repr": repr(obj)}
+
+def _extract_awake(engine_out):
+    if engine_out is None:
+        return None
+    v = getattr(engine_out, "awake", None)
+    if isinstance(v, bool):
+        return v
+    for container_name in ("pds", "state", "snapshot", "data"):
+        c = getattr(engine_out, container_name, None)
+        if isinstance(c, dict) and isinstance(c.get("awake"), bool):
+            return c.get("awake")
+    d = _jsonable(engine_out)
+    if isinstance(d, dict):
+        for k in ("awake",):
+            if isinstance(d.get(k), bool):
+                return d.get(k)
+        for k in ("pds", "state", "snapshot", "data"):
+            c = d.get(k)
+            if isinstance(c, dict) and isinstance(c.get("awake"), bool):
+                return c.get("awake")
+    return None
+
+def test_week3_state_transition_wake_sets_awake_true():
+    out = run_engine_via_v1(EngineInput(raw_text="hey vera", awake=False))
+    awake = _extract_awake(out)
+    if awake is None:
+        pytest.skip("Engine output does not expose awake; cannot lock transition truth here.")
+    assert awake is True
+
+def test_week3_state_transition_sleep_sets_awake_false():
+    out = run_engine_via_v1(EngineInput(raw_text="go to sleep", awake=True))
+    awake = _extract_awake(out)
+    if awake is None:
+        pytest.skip("Engine output does not expose awake; cannot lock transition truth here.")
+    assert awake is False
+
+def test_week3_state_transition_asleep_nonwake_does_not_flip_awake_true():
+    out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=False))
+    awake = _extract_awake(out)
+    if awake is None:
+        pytest.skip("Engine output does not expose awake; cannot lock transition truth here.")
+    assert awake is False
+
+def test_week3_state_transition_asleep_nonwake_remains_safe_no_actions():
+    out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=False))
+    types, _ = _types(out)
+    assert len(types) == 0
