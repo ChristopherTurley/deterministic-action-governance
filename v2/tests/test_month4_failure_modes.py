@@ -733,3 +733,39 @@ def test_month7_week2_action_ids_stable_for_same_input():
     slim1 = [{"id": x.get("id"), "kind": x.get("kind"), "payload": x.get("payload")} for x in a1]
     slim2 = [{"id": x.get("id"), "kind": x.get("kind"), "payload": x.get("payload")} for x in a2]
     assert slim1 == slim2
+
+
+"""MONTH 7 WEEK 3: EXECUTOR DRY-RUN RECEIPTS (ASSERT DETERMINISM)"""
+
+def test_month7_week3_executor_returns_one_receipt_per_action():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions") or []
+    res = execute_actions(actions, dry_run=True)
+    assert isinstance(res, list)
+    assert len(res) == len(actions)
+
+def test_month7_week3_executor_receipts_have_type_and_payload_echo():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions") or []
+    res = execute_actions(actions, dry_run=True)
+    for a, r in zip(actions, res):
+        assert isinstance(r, dict)
+        assert (r.get("type") or "").strip() == "ACTION_DRY_RUN"
+        payload = r.get("payload")
+        assert isinstance(payload, dict)
+        assert payload.get("id") == a.get("id")
+        assert payload.get("kind") == a.get("kind")
+        assert isinstance(payload.get("payload"), dict)
+
+def test_month7_week3_executor_deterministic_for_same_actions():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions") or []
+    r1 = execute_actions(actions, dry_run=True)
+    r2 = execute_actions(actions, dry_run=True)
+    assert r1 == r2

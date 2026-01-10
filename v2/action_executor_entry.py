@@ -25,6 +25,15 @@ def execute_actions(actions: Any, *, dry_run: bool = True) -> List[Dict[str, Any
         else:
             norm.append({"_repr": repr(a)})
 
-    # Week 1: always safe no-op result surface
-    # Later weeks will map kinds -> explicit handlers.
-    return []
+    # Week 3: deterministic dry-run execution receipts (no side effects)
+    out: List[Dict[str, Any]] = []
+    for a in norm:
+        out.append({
+            "type": "ACTION_DRY_RUN",
+            "payload": {
+                "id": a.get("id"),
+                "kind": a.get("kind"),
+                "payload": a.get("payload") if isinstance(a.get("payload"), dict) else {},
+            },
+        })
+    return out
