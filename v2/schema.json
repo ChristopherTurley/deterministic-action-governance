@@ -1,50 +1,58 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "vera-v2-execution-substrate-schema",
-  "title": "VERA v2 Boundary Contract + Persistent Daily State",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "EngineInput": {
-      "$ref": "#/$defs/EngineInput"
-    },
-    "EngineOutput": {
-      "$ref": "#/$defs/EngineOutput"
-    },
-    "PersistentDailyState": {
-      "$ref": "#/$defs/PersistentDailyState"
-    }
-  },
-  "required": [
-    "EngineInput",
-    "EngineOutput",
-    "PersistentDailyState"
-  ],
   "$defs": {
-    "ISODate": {
-      "type": "string",
-      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    "Action": {
+      "additionalProperties": false,
+      "properties": {
+        "payload": {
+          "default": {},
+          "type": "object"
+        },
+        "type": {
+          "$ref": "#/$defs/ActionType"
+        }
+      },
+      "required": [
+        "type",
+        "payload"
+      ],
+      "type": "object"
     },
-    "ISODateTime": {
-      "type": "string",
-      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
-    },
-    "EngineMode": {
-      "type": "string",
-      "enum": [
-        "IDLE",
-        "INTAKE",
-        "FOLLOWUP_OPEN",
-        "FOLLOWUP_SCHEDULE"
-      ]
-    },
-    "RouteKind": {
-      "type": "string",
-      "description": "v1 RouteResult.kind passthrough (authoritative selector).",
-      "minLength": 1
+    "ActionRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "declared_utc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ISODateTime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "payload": {
+          "default": {},
+          "type": "object"
+        },
+        "type": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "payload",
+        "declared_utc"
+      ],
+      "type": "object"
     },
     "ActionType": {
-      "type": "string",
       "description": "Declared boundary actions. These are intents; execution is owned by the shell/runtime.",
       "enum": [
         "ENTER_TASK_INTAKE",
@@ -59,277 +67,56 @@
         "STATE_SET_AWAKE",
         "TIME_READ",
         "WEB_LOOKUP_QUERY"
-      ]
+      ],
+      "type": "string"
     },
-    "Action": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/ActionType"
-        },
-        "payload": {
-          "type": "object",
-          "default": {}
-        }
-      },
-      "required": [
-        "type",
-        "payload"
-      ]
-    },
-    "EngineInput": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "raw_text": {
-          "type": "string"
-        },
-        "timestamp_utc": {
-          "$ref": "#/$defs/ISODateTime"
-        },
-        "wake_required": {
-          "type": "boolean",
-          "default": true
-        },
-        "priority_enabled": {
-          "type": "boolean",
-          "default": true
-        },
-        "awake": {
-          "type": "boolean",
-          "default": true
-        },
-        "context": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "local_date": {
-              "$ref": "#/$defs/ISODate"
-            },
-            "local_time": {
-              "type": "string"
-            },
-            "active_app": {
-              "type": "string"
-            },
-            "screen_hint": {
-              "type": "string"
-            }
-          },
-          "default": {}
-        },
-        "pds": {
-          "$ref": "#/$defs/PersistentDailyState"
-        }
-      },
-      "required": [
-        "raw_text"
-      ]
-    },
-    "EngineOutput": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "route_kind": {
-          "$ref": "#/$defs/RouteKind"
-        },
-        "speak_text": {
-          "type": "string",
-          "description": "Router-boundary speak is empty by design. Speaking belongs to runtime/app shell.",
-          "default": ""
-        },
-        "actions": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Action"
-          },
-          "default": []
-        },
-        "state_delta": {
-          "type": "object",
-          "default": {}
-        },
-        "mode_set": {
-          "$ref": "#/$defs/EngineMode"
-        },
-        "followup_until_utc": {
-          "description": "Not available at router-boundary (runtime owns followup windows).",
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ISODateTime"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "debug": {
-          "type": "object",
-          "additionalProperties": true,
-          "default": {}
-        }
-      },
-      "required": [
-        "route_kind",
-        "speak_text",
-        "actions",
-        "state_delta",
-        "mode_set",
-        "followup_until_utc",
-        "debug"
-      ]
-    },
-    "PersistentDailyState": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "schema_version": {
-          "type": "integer",
-          "const": 1
-        },
-        "local_date": {
-          "$ref": "#/$defs/ISODate"
-        },
-        "mode": {
-          "$ref": "#/$defs/EngineMode"
-        },
-        "awake": {
-          "type": "boolean"
-        },
-        "followup": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "open": {
-              "type": "boolean",
-              "default": false
-            },
-            "until_utc": {
-              "anyOf": [
-                {
-                  "$ref": "#/$defs/ISODateTime"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": null
-            },
-            "expects": {
-              "type": "string",
-              "default": ""
-            }
-          },
-          "required": [
-            "open",
-            "until_utc",
-            "expects"
-          ],
-          "default": {
-            "open": false,
-            "until_utc": null,
-            "expects": ""
-          }
-        },
-        "commitments": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Commitment"
-          },
-          "default": []
-        },
-        "dependencies": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Dependency"
-          },
-          "default": []
-        },
-        "blockers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Blocker"
-          },
-          "default": []
-        },
-        "momentum": {
-          "$ref": "#/$defs/Momentum"
-        },
-        "actions_declared": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ActionRecord"
-          },
-          "default": []
-        },
-        "actions_executed": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        },
-        "outcomes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Outcome"
-          },
-          "default": []
-        }
-      },
-      "required": [
-        "schema_version",
-        "local_date",
-        "mode",
-        "awake",
-        "followup"
-      ]
-    },
-    "CommitmentState": {
-      "type": "string",
-      "enum": [
-        "ACTIVE",
-        "DONE",
-        "CARRIED",
-        "DROPPED"
-      ]
-    },
-    "DecayModel": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "NONE",
-            "LINEAR",
-            "STEP"
-          ]
-        },
-        "half_life_hours": {
-          "type": "number",
-          "minimum": 0,
-          "default": 0
-        }
-      },
-      "required": [
-        "type",
-        "half_life_hours"
-      ]
-    },
-    "Commitment": {
-      "type": "object",
+    "Blocker": {
       "additionalProperties": false,
       "properties": {
         "id": {
-          "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "type": "string"
+        },
+        "notes": {
+          "default": "",
+          "type": "string"
+        },
+        "owner": {
+          "default": "",
+          "type": "string"
+        },
+        "severity": {
+          "default": 3,
+          "maximum": 5,
+          "minimum": 1,
+          "type": "integer"
         },
         "title": {
-          "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "severity",
+        "owner",
+        "notes"
+      ],
+      "type": "object"
+    },
+    "Commitment": {
+      "additionalProperties": false,
+      "properties": {
+        "decay": {
+          "$ref": "#/$defs/DecayModel"
+        },
+        "depends_on": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "due_local_date": {
           "anyOf": [
@@ -342,28 +129,26 @@
           ],
           "default": null
         },
-        "importance": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 5,
-          "default": 3
+        "id": {
+          "minLength": 1,
+          "type": "string"
         },
-        "decay": {
-          "$ref": "#/$defs/DecayModel"
+        "importance": {
+          "default": 3,
+          "maximum": 5,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "notes": {
+          "default": "",
+          "type": "string"
         },
         "state": {
           "$ref": "#/$defs/CommitmentState"
         },
-        "depends_on": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": []
-        },
-        "notes": {
-          "type": "string",
-          "default": ""
+        "title": {
+          "minLength": 1,
+          "type": "string"
         }
       },
       "required": [
@@ -375,86 +160,222 @@
         "state",
         "depends_on",
         "notes"
-      ]
+      ],
+      "type": "object"
+    },
+    "CommitmentState": {
+      "enum": [
+        "ACTIVE",
+        "DONE",
+        "CARRIED",
+        "DROPPED"
+      ],
+      "type": "string"
+    },
+    "DecayModel": {
+      "additionalProperties": false,
+      "properties": {
+        "half_life_hours": {
+          "default": 0,
+          "minimum": 0,
+          "type": "number"
+        },
+        "type": {
+          "enum": [
+            "NONE",
+            "LINEAR",
+            "STEP"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "half_life_hours"
+      ],
+      "type": "object"
     },
     "Dependency": {
-      "type": "object",
       "additionalProperties": false,
       "properties": {
         "a": {
-          "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "type": "string"
         },
         "b": {
-          "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "type": "string"
         },
         "kind": {
-          "type": "string",
+          "default": "SOFT",
           "enum": [
             "SOFT",
             "HARD"
           ],
-          "default": "SOFT"
+          "type": "string"
         }
       },
       "required": [
         "a",
         "b",
         "kind"
-      ]
+      ],
+      "type": "object"
     },
-    "Blocker": {
-      "type": "object",
+    "EngineInput": {
       "additionalProperties": false,
       "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
+        "awake": {
+          "default": true,
+          "type": "boolean"
         },
-        "title": {
-          "type": "string",
-          "minLength": 1
+        "context": {
+          "additionalProperties": false,
+          "default": {},
+          "properties": {
+            "active_app": {
+              "type": "string"
+            },
+            "local_date": {
+              "$ref": "#/$defs/ISODate"
+            },
+            "local_time": {
+              "type": "string"
+            },
+            "screen_hint": {
+              "type": "string"
+            }
+          },
+          "type": "object"
         },
-        "severity": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 5,
-          "default": 3
+        "pds": {
+          "$ref": "#/$defs/PersistentDailyState"
         },
-        "owner": {
-          "type": "string",
-          "default": ""
+        "priority_enabled": {
+          "default": true,
+          "type": "boolean"
         },
-        "notes": {
-          "type": "string",
-          "default": ""
+        "raw_text": {
+          "type": "string"
+        },
+        "timestamp_utc": {
+          "$ref": "#/$defs/ISODateTime"
+        },
+        "wake_required": {
+          "default": true,
+          "type": "boolean"
         }
       },
       "required": [
-        "id",
-        "title",
-        "severity",
-        "owner",
-        "notes"
-      ]
+        "raw_text"
+      ],
+      "type": "object"
     },
-    "Momentum": {
-      "type": "object",
+    "EngineMode": {
+      "enum": [
+        "IDLE",
+        "INTAKE",
+        "FOLLOWUP_OPEN",
+        "FOLLOWUP_SCHEDULE"
+      ],
+      "type": "string"
+    },
+    "EngineOutput": {
       "additionalProperties": false,
       "properties": {
-        "score": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 100,
-          "default": 50
+        "actions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Action"
+          },
+          "type": "array"
         },
+        "context": {
+          "additionalProperties": false,
+          "default": {},
+          "properties": {
+            "active_app": {
+              "type": "string"
+            },
+            "local_date": {
+              "$ref": "#/$defs/ISODate"
+            },
+            "local_time": {
+              "type": "string"
+            },
+            "screen_hint": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "debug": {
+          "additionalProperties": true,
+          "default": {},
+          "type": "object"
+        },
+        "followup_until_utc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ISODateTime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Not available at router-boundary (runtime owns followup windows)."
+        },
+        "mode_set": {
+          "$ref": "#/$defs/EngineMode"
+        },
+        "route_kind": {
+          "$ref": "#/$defs/RouteKind"
+        },
+        "speak_text": {
+          "default": "",
+          "description": "Router-boundary speak is empty by design. Speaking belongs to runtime/app shell.",
+          "type": "string"
+        },
+        "state_delta": {
+          "default": {},
+          "type": "object"
+        }
+      },
+      "required": [
+        "route_kind",
+        "speak_text",
+        "actions",
+        "state_delta",
+        "mode_set",
+        "followup_until_utc",
+        "debug"
+      ],
+      "type": "object"
+    },
+    "ISODate": {
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "ISODateTime": {
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    },
+    "Momentum": {
+      "additionalProperties": false,
+      "properties": {
         "reasons": {
-          "type": "array",
+          "default": [],
           "items": {
             "type": "string"
           },
-          "default": []
+          "type": "array"
+        },
+        "score": {
+          "default": 50,
+          "maximum": 100,
+          "minimum": 0,
+          "type": "integer"
         },
         "updated_utc": {
           "anyOf": [
@@ -472,63 +393,19 @@
         "score",
         "reasons",
         "updated_utc"
-      ]
-    },
-    "ActionRecord": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "type": {
-          "type": "string",
-          "minLength": 1
-        },
-        "payload": {
-          "type": "object",
-          "default": {}
-        },
-        "declared_utc": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ISODateTime"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        }
-      },
-      "required": [
-        "id",
-        "type",
-        "payload",
-        "declared_utc"
-      ]
+      ],
+      "type": "object"
     },
     "Outcome": {
-      "type": "object",
       "additionalProperties": false,
       "properties": {
         "action_id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "status": {
-          "type": "string",
-          "enum": [
-            "SUCCESS",
-            "FAIL",
-            "SKIP"
-          ],
-          "default": "SUCCESS"
+          "minLength": 1,
+          "type": "string"
         },
         "detail": {
-          "type": "string",
-          "default": ""
+          "default": "",
+          "type": "string"
         },
         "recorded_utc": {
           "anyOf": [
@@ -540,6 +417,15 @@
             }
           ],
           "default": null
+        },
+        "status": {
+          "default": "SUCCESS",
+          "enum": [
+            "SUCCESS",
+            "FAIL",
+            "SKIP"
+          ],
+          "type": "string"
         }
       },
       "required": [
@@ -547,7 +433,140 @@
         "status",
         "detail",
         "recorded_utc"
-      ]
+      ],
+      "type": "object"
+    },
+    "PersistentDailyState": {
+      "additionalProperties": false,
+      "properties": {
+        "actions_declared": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ActionRecord"
+          },
+          "type": "array"
+        },
+        "actions_executed": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "awake": {
+          "type": "boolean"
+        },
+        "blockers": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Blocker"
+          },
+          "type": "array"
+        },
+        "commitments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Commitment"
+          },
+          "type": "array"
+        },
+        "dependencies": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          },
+          "type": "array"
+        },
+        "followup": {
+          "additionalProperties": false,
+          "default": {
+            "expects": "",
+            "open": false,
+            "until_utc": null
+          },
+          "properties": {
+            "expects": {
+              "default": "",
+              "type": "string"
+            },
+            "open": {
+              "default": false,
+              "type": "boolean"
+            },
+            "until_utc": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ISODateTime"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "open",
+            "until_utc",
+            "expects"
+          ],
+          "type": "object"
+        },
+        "local_date": {
+          "$ref": "#/$defs/ISODate"
+        },
+        "mode": {
+          "$ref": "#/$defs/EngineMode"
+        },
+        "momentum": {
+          "$ref": "#/$defs/Momentum"
+        },
+        "outcomes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Outcome"
+          },
+          "type": "array"
+        },
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version",
+        "local_date",
+        "mode",
+        "awake",
+        "followup"
+      ],
+      "type": "object"
+    },
+    "RouteKind": {
+      "description": "v1 RouteResult.kind passthrough (authoritative selector).",
+      "minLength": 1,
+      "type": "string"
     }
-  }
+  },
+  "$id": "vera-v2-execution-substrate-schema",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "EngineInput": {
+      "$ref": "#/$defs/EngineInput"
+    },
+    "EngineOutput": {
+      "$ref": "#/$defs/EngineOutput"
+    },
+    "PersistentDailyState": {
+      "$ref": "#/$defs/PersistentDailyState"
+    }
+  },
+  "required": [
+    "EngineInput",
+    "EngineOutput",
+    "PersistentDailyState"
+  ],
+  "title": "VERA v2 Boundary Contract + Persistent Daily State",
+  "type": "object"
 }

@@ -94,6 +94,26 @@ def _normalize_web_search(raw: str) -> Dict[str, str]:
     return {"mode": "PASS", "raw": s}
 
 
+def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
+    """
+    CONTEXT_V1 (non-binding)
+    Deterministic normalization:
+    - None / non-dict -> {}
+    - allowlist keys only (matches schema additionalProperties:false)
+    - coerce values to strings (stable JSON surface)
+    """
+    if not isinstance(ctx, dict):
+        return {}
+    allowed = ("active_app", "local_date", "local_time", "screen_hint")
+    out: Dict[str, Any] = {}
+    for k in allowed:
+        v = ctx.get(k, None)
+        if v is None:
+            continue
+        out[k] = str(v)
+    return out
+
+
 
 @dataclass(frozen=True)
 class EngineInput:
@@ -117,6 +137,7 @@ class EngineOutput:
     debug: Dict[str, Any]
 
 
+    context: Optional[Dict[str, Any]] = None
 def _error_output(code: str, detail: str) -> EngineOutput:
     out = EngineOutput(
         route_kind=code,
@@ -248,9 +269,7 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
         _ = reduce_pds(inp.pds or {}, delta)
     except Exception:
         delta = {}
-
-    debug = {"meta": meta, "raw_len": len(raw), "ts_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
-
+    debug = {"meta": meta, "raw_len": len(raw), "ts_utc": str(inp.timestamp_utc or ""), "context": _normalize_context_v1(inp.context)}
     out = EngineOutput(
         route_kind=str(kind),
         speak_text="",
@@ -259,6 +278,7 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
         mode_set=mode_set,
         followup_until_utc=followup_until_utc,
         debug=debug,
+        context=_normalize_context_v1(inp.context),
     )
 
     ok, err = validate_named("EngineOutput", out)
