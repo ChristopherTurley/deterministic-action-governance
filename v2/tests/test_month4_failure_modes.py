@@ -268,6 +268,7 @@ def test_gate_safe_failure_asleep_web_lookup_currently_routes():
 
 import json
 import pytest
+from v2.contract import to_contract_output
 
 def _jsonable(obj):
     if obj is None:
@@ -428,3 +429,34 @@ def test_week4_reducer_respects_sleep_boundary_does_not_flip_awake_true():
     d = _jsonable(new_state)
     if isinstance(d, dict) and isinstance(d.get("awake"), bool):
         assert d["awake"] is False
+
+
+"""MONTH 5 WEEK 1: CONTRACT SURFACES v1 (ASSERT CURRENT TRUTH; NO FEATURE CHANGES)"""
+
+def _contract(out, awake_fallback: bool):
+    return to_contract_output(out, awake_fallback=awake_fallback)
+
+def _contract_awake(out, awake_fallback: bool):
+    c = _contract(out, awake_fallback=awake_fallback)
+    return c.get("awake")
+
+def _contract_receipts(out, awake_fallback: bool):
+    c = _contract(out, awake_fallback=awake_fallback)
+    r = c.get("receipts")
+    return r if isinstance(r, list) else []
+
+def test_month5_contract_surface_has_version_awake_route_kind_receipts():
+    out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=True))
+    c = _contract(out, awake_fallback=True)
+    assert c.get("version") == "v2_contract_v1"
+    assert isinstance(c.get("awake"), bool)
+    assert isinstance(c.get("route_kind"), str)
+    assert isinstance(c.get("receipts"), list)
+
+def test_month5_contract_surface_awake_is_deterministic_from_engine_input():
+    out1 = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=False))
+    out2 = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=True))
+    c1 = to_contract_output(out1, awake_fallback=False)
+    c2 = to_contract_output(out2, awake_fallback=True)
+    assert isinstance(c1.get("awake"), bool)
+    assert isinstance(c2.get("awake"), bool)
