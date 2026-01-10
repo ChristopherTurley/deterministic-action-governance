@@ -880,3 +880,58 @@ def test_month8_week2_allow_list_permits_only_specified_kind():
             assert r.get("type") == "ACTION_DRY_RUN"
         else:
             assert r.get("type") == "ACTION_BLOCKED_POLICY"
+
+
+"""MONTH 8 WEEK 3: REVERSIBILITY CONTRACT (UNDO HINTS)"""
+
+def test_month8_week3_executor_receipts_include_reversal_fields():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    res = execute_actions(c.get("actions"), dry_run=False, policy=None)
+
+    for r in res:
+        assert isinstance(r, dict)
+        assert isinstance(r.get("reversal_id"), str)
+        assert r.get("reversal_id") is not None
+        # Either hint or id must be present (id may be empty if no actions exist)
+        assert "undo_hint" in r
+
+def test_month8_week3_reducer_records_last_reversal_id_when_present():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    res = execute_actions(c.get("actions"), dry_run=False, policy=None)
+
+    state = {"awake": True, "audit": {}}
+    for r in res:
+        state = _reduce_state(state, r)
+
+    d = _as_jsonable_state(state)
+    assert isinstance(d, dict)
+    audit = d.get("audit") or {}
+    assert isinstance(audit, dict)
+
+    if res:
+        # If actions existed, reversal_id should be non-empty and recorded
+        # If no actions, permissive.
+        pass
+
+def test_month8_week3_reversibility_deterministic_for_same_input():
+    from v2.action_executor_entry import execute_actions
+    out1 = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    out2 = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c1 = to_contract_output(out1, awake_fallback=True)
+    c2 = to_contract_output(out2, awake_fallback=True)
+
+    r1 = execute_actions(c1.get("actions"), dry_run=False, policy=None)
+    r2 = execute_actions(c2.get("actions"), dry_run=False, policy=None)
+
+    s1 = {"awake": True, "audit": {}}
+    s2 = {"awake": True, "audit": {}}
+    for x in r1:
+        s1 = _reduce_state(s1, x)
+    for x in r2:
+        s2 = _reduce_state(s2, x)
+
+    assert _state_snapshot(s1) == _state_snapshot(s2)

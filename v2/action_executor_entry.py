@@ -32,6 +32,8 @@ def execute_actions(actions: Any, *, dry_run: bool = True, policy: Dict[str, Any
     for a in norm:
         out.append({
             "type": "ACTION_DRY_RUN",
+                "reversal_id": str(a.get("id") or ""),
+                "undo_hint": "No-op (dry-run)",
             "payload": {
                 "id": a.get("id"),
                 "kind": a.get("kind"),
