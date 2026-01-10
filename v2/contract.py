@@ -125,3 +125,48 @@ def to_contract_output(*args, **kwargs):
     c = _to_contract_output_impl_m6w3(*args, **kwargs)
     return _m6w3_canonicalize_contract_output(c)
 
+# === MONTH7W2_ACTION_NORMALIZATION ===
+
+def _m7w2_hash_id(obj) -> str:
+    try:
+        raw = json.dumps(obj, sort_keys=True, default=str).encode("utf-8")
+    except Exception:
+        raw = repr(obj).encode("utf-8")
+    return hashlib.sha1(raw).hexdigest()[:12]
+
+def _m7w2_normalize_action(a):
+    if a is None:
+        return {"id": _m7w2_hash_id("NONE"), "kind": "UNKNOWN", "payload": {}}
+    if not isinstance(a, dict):
+        return {"id": _m7w2_hash_id({"_repr": repr(a)}), "kind": "UNKNOWN", "payload": {}, "_repr": repr(a)}
+
+    kind = a.get("kind") or a.get("action_kind") or a.get("type") or a.get("name") or "UNKNOWN"
+    kind = str(kind).strip().upper() or "UNKNOWN"
+
+    payload = a.get("payload")
+    if not isinstance(payload, dict):
+        payload = a.get("data") if isinstance(a.get("data"), dict) else {}
+
+    aid = a.get("id") or a.get("action_id") or a.get("receipt_id") or a.get("event_id")
+    aid = str(aid).strip() if isinstance(aid, str) else ""
+    if not aid:
+        # Stable ID derived from kind+payload only (deterministic)
+        aid = _m7w2_hash_id({"kind": kind, "payload": payload})
+
+    out = {"id": aid, "kind": kind, "payload": payload}
+    # Keep any extra keys for debugging, but don't rely on them.
+    if "_repr" in a:
+        out["_repr"] = a["_repr"]
+    return out
+
+# Upgrade the existing canonicalizer to normalize actions too.
+_m6w3_canonicalize_contract_output_prev = _m6w3_canonicalize_contract_output
+
+def _m6w3_canonicalize_contract_output(c):
+    c = _m6w3_canonicalize_contract_output_prev(c)
+    actions = c.get("actions")
+    if not isinstance(actions, list):
+        actions = []
+    c["actions"] = [_m7w2_normalize_action(a) for a in actions]
+    return c
+

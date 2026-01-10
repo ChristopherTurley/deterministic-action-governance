@@ -707,3 +707,29 @@ def test_month7_week1_executor_entry_importable_and_callable():
     actions = c.get("actions")
     res = execute_actions(actions, dry_run=True)
     assert isinstance(res, list)
+
+
+"""MONTH 7 WEEK 2: ACTION NORMALIZATION + STABLE IDS"""
+
+def test_month7_week2_actions_have_id_kind_payload():
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions")
+    assert isinstance(actions, list)
+    for a in actions:
+        assert isinstance(a, dict)
+        assert isinstance(a.get("id"), str) and a["id"].strip()
+        assert isinstance(a.get("kind"), str) and a["kind"].strip() and a["kind"] == a["kind"].upper()
+        assert isinstance(a.get("payload"), dict)
+
+def test_month7_week2_action_ids_stable_for_same_input():
+    out1 = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    out2 = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c1 = to_contract_output(out1, awake_fallback=True)
+    c2 = to_contract_output(out2, awake_fallback=True)
+    a1 = c1.get("actions") or []
+    a2 = c2.get("actions") or []
+    # Compare only the normalized surface (id/kind/payload) for determinism
+    slim1 = [{"id": x.get("id"), "kind": x.get("kind"), "payload": x.get("payload")} for x in a1]
+    slim2 = [{"id": x.get("id"), "kind": x.get("kind"), "payload": x.get("payload")} for x in a2]
+    assert slim1 == slim2
