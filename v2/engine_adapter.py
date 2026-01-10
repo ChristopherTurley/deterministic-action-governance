@@ -7,6 +7,42 @@ from typing import Any, Dict, List, Optional
 from v2.state_reducer import reduce_pds
 from v2.validate import validate_named
 
+import re
+
+
+def _normalize_web_search(raw: str) -> Dict[str, str]:
+    """
+    Deterministic v2-only normalization.
+    Returns:
+      {"mode": "PASS", "raw": raw}
+      {"mode": "FOLLOWUP", "speak": "..."}
+    """
+    s = (raw or "").strip()
+    low = re.sub(r"\s+", " ", s.lower()).strip()
+
+    # Bare intent: requires a follow-up (no actions)
+    if low in {"search the web", "search web", "search the internet", "search internet", "web search"}:
+        return {"mode": "FOLLOWUP", "speak": "What would you like me to search the web for?"}
+
+    # Normalize common phrases to a v1-friendly pattern that yields WEB_LOOKUP
+    patterns = [
+        r"^(search the web for)\s+(.+)$",
+        r"^(search for)\s+(.+)$",
+        r"^(look up)\s+(.+)$",
+        r"^(lookup)\s+(.+)$",
+        r"^(find)\s+(.+)$",
+    ]
+    for pat in patterns:
+        m = re.match(pat, s.strip(), flags=re.IGNORECASE)
+        if m:
+            q = (m.group(2) or "").strip()
+            if q:
+                # v1 already supports "look up X"
+                return {"mode": "DIRECT_WEB_LOOKUP", "query": q}
+
+    return {"mode": "PASS", "raw": s}
+
+
 
 @dataclass(frozen=True)
 class EngineInput:
@@ -48,6 +84,42 @@ def _error_output(code: str, detail: str) -> EngineOutput:
 
 def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
     raw = (inp.raw_text or "").strip()
+
+    norm = _normalize_web_search(raw)
+    if norm.get("mode") == "FOLLOWUP":
+        out = EngineOutput(
+            route_kind="WEB_LOOKUP_FOLLOWUP",
+            speak_text=str(norm.get("speak") or ""),
+            actions=[],
+            state_delta={},
+            mode_set="IDLE",
+            followup_until_utc=None,
+            debug={"normalized": True, "reason": "missing_query"},
+        )
+        ok, err = validate_named("EngineOutput", out)
+        if not ok:
+            return _error_output("ERROR_SCHEMA_OUTPUT", err)
+        return out
+
+
+    if norm.get("mode") == "DIRECT_WEB_LOOKUP":
+        q = str(norm.get("query") or "").strip()
+        out = EngineOutput(
+            route_kind="WEB_LOOKUP",
+            speak_text="",
+            actions=[{"type": "WEB_LOOKUP_QUERY", "payload": {"query": q}}],
+            state_delta={"awake": bool(inp.awake), "mode": "IDLE"},
+            mode_set="IDLE",
+            followup_until_utc=None,
+            debug={"normalized": True, "direct": "WEB_LOOKUP_QUERY"},
+        )
+        ok, err = validate_named("EngineOutput", out)
+        if not ok:
+            return _error_output("ERROR_SCHEMA_OUTPUT", err)
+        return out
+
+    raw = str(norm.get("raw") or raw)
+
 
     try:
         import assistant.router.core as v1_core
@@ -98,19 +170,8 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
         actions.append({"type": "PRIORITY_GET", "payload": {}})
 
     if rk == "PRIORITY_SET":
-        payload = payload if isinstance(payload, dict) else {}
-        actions.append({"type": "PRIORITY_SET", "payload": payload})
-
-    # START DAY -> intake action
-    if rk == "START_DAY":
-        actions.append({"type": "ENTER_TASK_INTAKE", "payload": {}})
-
-    # WAKE / SLEEP -> explicit awake state set
-    if rk == "WAKE":
-        actions.append({"type": "STATE_SET_AWAKE", "payload": {"awake": True}})
-
-    if rk == "SLEEP":
-        actions.append({"type": "STATE_SET_AWAKE", "payload": {"awake": False}})
+        pld = meta if isinstance(meta, dict) else {}
+        actions.append({"type": "PRIORITY_SET", "payload": pld})
 
 
     if kind == "WAKE":
