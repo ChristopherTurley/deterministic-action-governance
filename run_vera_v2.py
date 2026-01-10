@@ -67,6 +67,16 @@ def _acquire_single_instance_lock() -> int:
     return fd
 
 
+
+
+_request_seq = 0
+
+def _mk_request_id() -> str:
+    global _request_seq
+    _request_seq += 1
+    return f"v2-{_today_local_ymd()}-{_request_seq:04d}-{_utc_iso()}"
+
+
 def _strip_debug_fields(pds: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(pds, dict):
         return {}
@@ -175,10 +185,11 @@ class VeraAppV2Bridge(VeraApp):
             timestamp_utc=_utc_iso(),
             pds=self._pds,
         )
+        request_id = _mk_request_id()
 
         eng = run_engine_via_v1(inp)
 
-        _log_debug("ENGINE", {"route_kind": eng.route_kind, "actions": eng.actions})
+        _log_debug("ENGINE", {"request_id": request_id, "route_kind": eng.route_kind, "actions": eng.actions})
 
         actions: List[Dict[str, Any]] = eng.actions or []
         if actions:
@@ -192,7 +203,7 @@ class VeraAppV2Bridge(VeraApp):
         receipts: List[Dict[str, Any]] = []
         if actions:
             try:
-                receipts = execute_actions(self, actions)
+                primary_text, receipts = execute_actions(self, request_id, actions)
             except Exception as e:
                 receipts = [{"status": "ERROR", "error": repr(e)}]
 
