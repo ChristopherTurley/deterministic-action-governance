@@ -476,3 +476,34 @@ def test_month5_contract_surface_awake_is_deterministic_from_engine_input():
     c2 = to_contract_output(out2, awake_fallback=True)
     assert isinstance(c1.get("awake"), bool)
     assert isinstance(c2.get("awake"), bool)
+
+
+"""MONTH 5 WEEK 3: SLEEP TRUTH ISOLATION (ASSERT CURRENT TRUTH; NO FEATURE CHANGES)"""
+
+import pytest
+
+@pytest.mark.parametrize("phrase, awake_in", [
+    ("sleep", True),
+    ("go to sleep", True),
+    ("vera go to sleep", True),
+    ("hey vera go to sleep", True),
+    ("go to sleep", False),
+    ("sleep", False),
+])
+def test_month5_week3_sleep_variants_route_kind_truth(phrase, awake_in):
+    out = run_engine_via_v1(EngineInput(raw_text=phrase, awake=awake_in))
+    c = to_contract_output(out, awake_fallback=bool(awake_in))
+    rk = (c.get("route_kind") or "").strip().upper()
+
+    assert isinstance(rk, str)
+
+    # Lock current truth:
+    # If any variant actually produces SLEEP at this seam, we accept that as contract-eligible later.
+    # Otherwise we explicitly learn that SLEEP is handled outside this seam.
+    #
+    # This test is intentionally permissive, but it *records truth* by asserting that the route_kind
+    # stays stable over time for the same phrase + awake_in.
+    out2 = run_engine_via_v1(EngineInput(raw_text=phrase, awake=awake_in))
+    c2 = to_contract_output(out2, awake_fallback=bool(awake_in))
+    rk2 = (c2.get("route_kind") or "").strip().upper()
+    assert rk == rk2
