@@ -638,3 +638,30 @@ def test_month6_week3_receipts_are_normalized_dicts():
         assert t
         payload = r.get("payload")
         assert isinstance(payload, dict)
+
+
+"""MONTH 6 WEEK 4: CONTRACT VERSION + DEPRECATION GUARD"""
+
+def test_month6_week4_contract_version_present_and_stable():
+    out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    assert isinstance(c, dict)
+    assert (c.get("version") or "").strip() == "v2_contract_v1"
+
+def test_month6_week4_contract_required_keys_present():
+    out = run_engine_via_v1(EngineInput(raw_text="search the web for apple intelligence", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    for k in ("route_kind", "awake", "receipts", "actions", "version"):
+        assert k in c, f"Missing required contract key: {k}"
+    assert isinstance(c.get("route_kind"), str) and c["route_kind"].strip()
+    assert isinstance(c.get("awake"), bool)
+    assert isinstance(c.get("receipts"), list)
+    assert isinstance(c.get("actions"), list)
+
+def test_month6_week4_receipts_always_have_type_and_payload_dict():
+    out = run_engine_via_v1(EngineInput(raw_text="search the web for apple intelligence", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    for r in c.get("receipts", []):
+        assert isinstance(r, dict)
+        assert isinstance(r.get("type"), str) and r["type"].strip()
+        assert isinstance(r.get("payload"), dict)
