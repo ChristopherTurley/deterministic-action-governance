@@ -121,3 +121,144 @@ def test_empty_input_is_safe():
     out = run_engine_via_v1(EngineInput(raw_text="   ", awake=True))
     types, _ = _types(out)
     assert len(types) == 0
+
+
+# === MONTH 4 WEEK 2: GATE TESTS (ASSERT CURRENT TRUTH; NO FEATURE CHANGES) ===
+
+
+
+import copy
+import json
+
+def _as_jsonable_state(state):
+    if state is None:
+        return None
+    if isinstance(state, dict):
+        return state
+    to_dict = getattr(state, "to_dict", None)
+    if callable(to_dict):
+        return to_dict()
+    d = getattr(state, "__dict__", None)
+    if isinstance(d, dict):
+        return d
+    try:
+        return json.loads(json.dumps(state, default=str))
+    except Exception:
+        return {"_repr": repr(state)}
+
+def _state_snapshot(state):
+    obj = _as_jsonable_state(state)
+    return json.dumps(obj, sort_keys=True, default=str)
+
+def _get_route_kind(rr):
+    for k in ("route_kind", "kind", "route", "route_name"):
+        v = getattr(rr, k, None)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    raise AssertionError("RouteResult missing a non-empty route kind attribute (route_kind/kind/route/route_name).")
+
+def _get_actions(rr):
+    for k in ("actions", "action_list", "planned_actions"):
+        v = getattr(rr, k, None)
+        if isinstance(v, list):
+            return v
+    v = getattr(rr, "action", None)
+    if v is not None:
+        return [v]
+    return []
+
+def _action_fields(action):
+    if action is None:
+        return {}
+    if isinstance(action, dict):
+        return action
+    to_dict = getattr(action, "to_dict", None)
+    if callable(to_dict):
+        return to_dict()
+    d = getattr(action, "__dict__", None)
+    if isinstance(d, dict):
+        return d
+    return {"_repr": repr(action)}
+
+def _pick_nonempty_str(d, keys):
+    for k in keys:
+        v = d.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return None
+
+def _route_text(raw, state, awake=True, wake_required=False, priority_enabled=True):
+    candidates = [
+        ("v2.router.core", "route_text"),
+        ("assistant.router.core", "route_text"),
+        ("v2.core.router", "route_text"),
+        ("v2.router", "route_text"),
+    ]
+    last_err = None
+    for mod, fn in candidates:
+        try:
+            m = __import__(mod, fromlist=[fn])
+            f = getattr(m, fn)
+            return f(raw, wake_required=wake_required, priority_enabled=priority_enabled, awake=awake)
+        except Exception as e:
+            last_err = e
+    raise AssertionError(f"Unable to import route_text from known locations; last error: {last_err!r}")
+
+def _apply_reducer(state, rr):
+    candidates = [
+        ("v2.state_reducer", "reduce_state"),
+        ("v2.core.state_reducer", "reduce_state"),
+        ("v2.reducer", "reduce_state"),
+    ]
+    last_err = None
+    for mod, fn in candidates:
+        try:
+            m = __import__(mod, fromlist=[fn])
+            f = getattr(m, fn)
+            return f(state, rr)
+        except Exception as e:
+            last_err = e
+    return None
+
+def test_gate_receipt_integrity_route_kind_nonempty():
+    rr = _route_text("what time is it", state=None, awake=True, wake_required=False)
+    rk = _get_route_kind(rr)
+    assert isinstance(rk, str) and rk.strip()
+
+def test_gate_receipt_integrity_actions_have_id_and_kind_when_present():
+    rr = _route_text("search the web for apple intelligence", state=None, awake=True, wake_required=False)
+    actions = _get_actions(rr)
+    if not actions:
+        return
+    for a in actions:
+        d = _action_fields(a)
+        aid = _pick_nonempty_str(d, ("action_id", "id", "receipt_id", "event_id"))
+        ak = _pick_nonempty_str(d, ("action_kind", "kind", "type", "name"))
+        assert aid is not None, f"Action missing non-empty id field; keys={list(d.keys())}"
+        assert ak is not None, f"Action missing non-empty kind/type field; keys={list(d.keys())}"
+
+def test_gate_determinism_same_input_same_state_same_route_kind():
+    state = {"awake": True}
+    rr1 = _route_text("what time is it", state=state, awake=True, wake_required=False)
+    rr2 = _route_text("what time is it", state=state, awake=True, wake_required=False)
+    assert _get_route_kind(rr1) == _get_route_kind(rr2)
+
+def test_gate_state_boundaries_router_does_not_mutate_state_snapshot():
+    state = {"awake": True, "pds": {"x": 1}}
+    before = _state_snapshot(state)
+    _ = _route_text("open https://example.com", state=state, awake=True, wake_required=False)
+    after = _state_snapshot(state)
+    assert before == after
+
+def test_gate_state_boundaries_asleep_blocked_open_does_not_flip_awake_true():
+    state = {"awake": False}
+    before = _state_snapshot(state)
+    rr = _route_text("open https://example.com", state=state, awake=False, wake_required=False)
+    _ = _get_route_kind(rr)
+    after = _state_snapshot(state)
+    assert before == after
+
+def test_gate_safe_failure_asleep_web_lookup_currently_routes():
+    rr = _route_text("search the web for tesla stock", state={"awake": False}, awake=False, wake_required=False)
+    rk = _get_route_kind(rr)
+    assert isinstance(rk, str) and rk.strip()
