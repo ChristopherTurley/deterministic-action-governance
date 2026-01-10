@@ -665,3 +665,45 @@ def test_month6_week4_receipts_always_have_type_and_payload_dict():
         assert isinstance(r, dict)
         assert isinstance(r.get("type"), str) and r["type"].strip()
         assert isinstance(r.get("payload"), dict)
+
+
+"""MONTH 7 WEEK 1: ACTION CONTRACT + EXECUTOR ENTRY (ASSERT CURRENT TRUTH)"""
+
+def _pick_nonempty_str(d, keys):
+    for k in keys:
+        v = d.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return None
+
+def test_month7_week1_contract_actions_is_list_of_dicts():
+    out = run_engine_via_v1(EngineInput(raw_text="search the web for apple intelligence", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions")
+    assert isinstance(actions, list)
+    for a in actions:
+        assert isinstance(a, dict)
+
+def test_month7_week1_action_surface_truth_lock_when_actions_present():
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions")
+    assert isinstance(actions, list)
+
+    # Current truth lock:
+    # If actions are structured, they should include non-empty kind/id fields.
+    # If not structured yet, we accept the "_repr" fallback (still deterministic + inspectable).
+    for a in actions:
+        assert isinstance(a, dict)
+        ak = _pick_nonempty_str(a, ("action_kind", "kind", "type", "name"))
+        aid = _pick_nonempty_str(a, ("action_id", "id", "receipt_id", "event_id"))
+        if ak is None and aid is None:
+            assert "_repr" in a, f"Unstructured action must include _repr for auditability; keys={list(a.keys())}"
+
+def test_month7_week1_executor_entry_importable_and_callable():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="search the web for apple intelligence", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions")
+    res = execute_actions(actions, dry_run=True)
+    assert isinstance(res, list)
