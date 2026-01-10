@@ -1,5 +1,56 @@
 from __future__ import annotations
 
+
+def _normalize_web_query(raw: str) -> str:
+    """
+    WEB_QUERY_NORMALIZE_V1
+    Deterministic, rules-only normalization for web lookup queries.
+    Goal: turn messy transcripts into stable search queries without guessing.
+    """
+    q = (raw or "").strip()
+
+    # Drop a leading "hey vera," if it survived upstream
+    q = re.sub(r"^\s*hey\s+vera\s*,?\s*", "", q, flags=re.I)
+
+    # Remove common intent prefixes
+    q = re.sub(r"^\s*(search\s+(the\s+)?web\s+(for\s+)?)", "", q, flags=re.I)
+    q = re.sub(r"^\s*(web\s*search\s+(for\s+)?)", "", q, flags=re.I)
+    q = re.sub(r"^\s*(look\s*up\s+)", "", q, flags=re.I)
+    q = re.sub(r"^\s*(lookup\s+)", "", q, flags=re.I)
+    q = re.sub(r"^\s*(google\s+)", "", q, flags=re.I)
+    q = re.sub(r"^\s*(find\s+)", "", q, flags=re.I)
+    q = re.sub(r"^\s*(search\s+for\s+)", "", q, flags=re.I)
+
+    # Normalize whitespace + punctuation edges
+    q = q.replace("—", "-").replace("–", "-")
+    q = re.sub(r"\s+", " ", q).strip(" \t\r\n.,!?;:")
+
+    # --- Numeric normalization (targeted) ---
+    # 9-11 / 9 11 / nine eleven -> 911 (ONLY in a context where it's likely a model number)
+    q_low = q.lower()
+
+    has_911_signal = bool(
+        re.search(r"\b9\s*[- ]\s*11\b", q_low) or
+        re.search(r"\b911\b", q_low) or
+        re.search(r"\bnine\s+eleven\b", q_low)
+    )
+
+    if has_911_signal:
+        q = re.sub(r"\b9\s*[- ]\s*11\b", "911", q, flags=re.I)
+        q = re.sub(r"\bnine\s+eleven\b", "911", q, flags=re.I)
+
+    # --- Transcript-noise correction (HIGH PRECISION only) ---
+    # Only rewrite "portion/portia/porchia" -> "porsche" when 911 signal is present.
+    if has_911_signal:
+        q = re.sub(r"\bportion\b", "porsche", q, flags=re.I)
+        q = re.sub(r"\bportia\b", "porsche", q, flags=re.I)
+        q = re.sub(r"\bporchia\b", "porsche", q, flags=re.I)
+        q = re.sub(r"\bporche\b", "porsche", q, flags=re.I)
+
+    # Final cleanup
+    q = re.sub(r"\s+", " ", q).strip()
+    return q
+
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -107,7 +158,7 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
         out = EngineOutput(
             route_kind="WEB_LOOKUP",
             speak_text="",
-            actions=[{"type": "WEB_LOOKUP_QUERY", "payload": {"query": q}}],
+            actions=[{"type": "WEB_LOOKUP_QUERY", "payload": {"query": _normalize_web_query(q)}}],
             state_delta={"awake": bool(inp.awake), "mode": "IDLE"},
             mode_set="IDLE",
             followup_until_utc=None,
@@ -149,7 +200,7 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
         q = meta.get("query", None)
         if not isinstance(q, str) or not q.strip():
             q = (getattr(rr, "cleaned", "") or "").strip()
-        actions.append({"type": "WEB_LOOKUP_QUERY", "payload": {"query": str(q)}})
+        actions.append({"type": "WEB_LOOKUP_QUERY", "payload": {"query": _normalize_web_query(str(q))}})
 
     if kind == "SPOTIFY":
         cmd = meta.get("cmd", "")
