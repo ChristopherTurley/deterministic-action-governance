@@ -72,3 +72,42 @@ def reduce_pds(state: Dict[str, Any], delta: Dict[str, Any]) -> ReduceResult:
         out_delta["momentum"] = m2
 
     return ReduceResult(next_state=next_state, delta=out_delta)
+
+def _receipt_type(receipt_or_rr: Any) -> str:
+    if receipt_or_rr is None:
+        return ""
+    if isinstance(receipt_or_rr, dict):
+        t = receipt_or_rr.get("type") or receipt_or_rr.get("kind") or receipt_or_rr.get("route_kind") or ""
+        return str(t).strip().upper()
+    for k in ("type", "kind", "route_kind"):
+        v = getattr(receipt_or_rr, k, None)
+        if isinstance(v, str) and v.strip():
+            return v.strip().upper()
+    return ""
+
+def reduce_state(state: Any, receipt_or_rr: Any) -> Dict[str, Any]:
+    """
+    Month 6 Week 1: canonical reducer entry.
+    Conservative + deterministic:
+    - Never mutates input
+    - Only applies whitelisted deltas (awake transitions) inferred from receipt type/kind
+    - Falls back to no-op delta
+    """
+    s0: Dict[str, Any]
+    if isinstance(state, dict):
+        s0 = dict(state)
+    else:
+        d = getattr(state, "__dict__", None)
+        s0 = dict(d) if isinstance(d, dict) else {}
+
+    t = _receipt_type(receipt_or_rr)
+
+    delta: Dict[str, Any] = {}
+    if t == "WAKE":
+        delta["awake"] = True
+    elif t == "SLEEP":
+        delta["awake"] = False
+
+    rr = reduce_pds(s0, delta)
+    return rr.next_state
+

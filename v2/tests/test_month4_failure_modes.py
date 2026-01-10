@@ -395,7 +395,7 @@ def _reduce_state(state, receipt_or_rr):
     try:
         return reduce_state_canon(state, receipt_or_rr)
     except ImportError as e:
-        pytest.skip(f"Reducer not contract-exposed yet: {e!r}")
+        raise
 
 def test_week4_receipt_is_jsonable_when_present():
     out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=True))
@@ -409,7 +409,16 @@ def test_week4_reducer_purity_does_not_mutate_input_state():
     out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=False))
     receipts = _get_receipts(out)
     if not receipts:
-        pytest.skip("No receipts/actions present; cannot exercise reducer continuity on this output.")
+        raw, awake, r = _pick_first_receipt_from_any_command()
+        if r is None:
+            pytest.skip("No receipts found by probe; update probe candidates to match current truth.")
+        receipts = [r]
+    before = _snapshot(state)
+    _ = _reduce_state(state, receipts[0])
+    after = _snapshot(state)
+    assert before == after
+
+
     before = _snapshot(state)
     _ = _reduce_state(state, receipts[0])
     after = _snapshot(state)
@@ -420,7 +429,16 @@ def test_week4_reducer_idempotent_same_input_same_output_snapshot():
     out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=True))
     receipts = _get_receipts(out)
     if not receipts:
-        pytest.skip("No receipts/actions present; cannot exercise reducer idempotence on this output.")
+        raw, awake, r = _pick_first_receipt_from_any_command()
+        if r is None:
+            pytest.skip("No receipts found by probe; update probe candidates to match current truth.")
+        receipts = [r]
+    r = receipts[0]
+    s1 = _reduce_state(copy.deepcopy(state), r)
+    s2 = _reduce_state(copy.deepcopy(state), r)
+    assert _snapshot(s1) == _snapshot(s2)
+
+
     r = receipts[0]
     s1 = _reduce_state(copy.deepcopy(state), r)
     s2 = _reduce_state(copy.deepcopy(state), r)
@@ -428,10 +446,19 @@ def test_week4_reducer_idempotent_same_input_same_output_snapshot():
 
 def test_week4_reducer_respects_sleep_boundary_does_not_flip_awake_true():
     state = {"awake": False}
-    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=False))
+    out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=False))
     receipts = _get_receipts(out)
     if not receipts:
-        pytest.skip("No receipts/actions present; cannot assert reducer boundary on this output.")
+        raw, awake, r = _pick_first_receipt_from_any_command()
+        if r is None:
+            pytest.skip("No receipts found by probe; update probe candidates to match current truth.")
+        receipts = [r]
+    new_state = _reduce_state(copy.deepcopy(state), receipts[0])
+    d = _as_jsonable_state(new_state)
+    if isinstance(d, dict) and isinstance(d.get("awake"), bool):
+        assert d["awake"] is False
+
+
     new_state = _reduce_state(copy.deepcopy(state), receipts[0])
     d = _jsonable(new_state)
     if isinstance(d, dict) and isinstance(d.get("awake"), bool):
@@ -550,4 +577,4 @@ def test_month5_week4_reducer_entry_importable():
     try:
         _ = reduce_state_canon({"awake": True}, {"kind": "NOOP"})
     except ImportError as e:
-        pytest.skip(f"Reducer not contract-exposed yet: {e!r}")
+        raise
