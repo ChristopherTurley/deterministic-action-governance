@@ -51,3 +51,31 @@ def to_contract_output(engine_out: Any, *, awake_fallback: bool) -> Dict[str, An
         "route_kind": route_kind,
         "receipts": [_jsonable(r) for r in receipts],
     }
+
+def apply_contract(engine_out: Any, *, awake_fallback: bool) -> Any:
+    c = to_contract_output(engine_out, awake_fallback=awake_fallback)
+
+    rk = (c.get("route_kind") or "").strip().upper()
+    if rk == "WAKE":
+        c["awake"] = True
+    elif rk == "SLEEP":
+        c["awake"] = False
+
+    if isinstance(engine_out, dict):
+        engine_out.update(c)
+        engine_out["contract"] = c
+        return engine_out
+
+    for k, v in c.items():
+        try:
+            setattr(engine_out, k, v)
+        except Exception:
+            pass
+
+    try:
+        setattr(engine_out, "contract", c)
+    except Exception:
+        pass
+
+    return engine_out
+
