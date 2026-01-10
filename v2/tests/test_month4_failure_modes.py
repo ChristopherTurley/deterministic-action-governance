@@ -578,3 +578,39 @@ def test_month5_week4_reducer_entry_importable():
         _ = reduce_state_canon({"awake": True}, {"kind": "NOOP"})
     except ImportError as e:
         raise
+
+
+"""MONTH 6 WEEK 2: REDUCER WHITELISTED DELTAS (ASSERT BEHAVIOR)"""
+
+def test_month6_week2_reducer_sets_last_receipt_type_when_type_present():
+    state = {"awake": True, "pds": {"x": 1}}
+    receipt = {"type": "WEB_LOOKUP_QUERY", "payload": {"query": "x"}}
+    new_state = _reduce_state(state, receipt)
+    d = _as_jsonable_state(new_state)
+    assert isinstance(d, dict)
+    assert (d.get("last_receipt_type") or "").strip().upper() == "WEB_LOOKUP_QUERY"
+
+def test_month6_week2_reducer_sets_last_route_kind_when_present():
+    state = {"awake": True, "pds": {"x": 1}}
+    rr = {"route_kind": "TIME"}
+    new_state = _reduce_state(state, rr)
+    d = _as_jsonable_state(new_state)
+    assert isinstance(d, dict)
+    assert (d.get("last_route_kind") or "").strip().upper() == "TIME"
+
+def test_month6_week2_reducer_increments_routes_total_deterministically():
+    state = {"awake": True, "counters": {"routes_total": 0, "receipts_total": 0}}
+    r = {"type": "TIME"}
+    s1 = _reduce_state(state, r)
+    s2 = _reduce_state(state, r)
+    d1 = _as_jsonable_state(s1)
+    d2 = _as_jsonable_state(s2)
+    assert d1["counters"]["routes_total"] == 1
+    assert d2["counters"]["routes_total"] == 1
+
+def test_month6_week2_reducer_does_not_write_unknown_top_level_keys():
+    state = {"awake": True, "DO_NOT_TOUCH": {"x": 1}}
+    r = {"type": "TIME"}
+    new_state = _reduce_state(state, r)
+    d = _as_jsonable_state(new_state)
+    assert d.get("DO_NOT_TOUCH") == {"x": 1}

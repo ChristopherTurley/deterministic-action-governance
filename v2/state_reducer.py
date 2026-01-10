@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 @dataclass(frozen=True)
@@ -108,6 +108,45 @@ def reduce_state(state: Any, receipt_or_rr: Any) -> Dict[str, Any]:
     elif t == "SLEEP":
         delta["awake"] = False
 
+
+    # Week 2: whitelisted state memory (deterministic, conservative)
+    rk = _get_route_kind_any(receipt_or_rr)
+    if rk:
+        delta["last_route_kind"] = rk
+
+    if t:
+        delta["last_receipt_type"] = t
+
+    counters = s0.get("counters") if isinstance(s0, dict) else None
+    if not isinstance(counters, dict):
+        counters = {}
+    counters2 = dict(counters)
+    counters2["routes_total"] = _safe_int(counters2.get("routes_total"), 0) + 1
+    if t:
+        counters2["receipts_total"] = _safe_int(counters2.get("receipts_total"), 0) + 1
+    delta["counters"] = counters2
+
     rr = reduce_pds(s0, delta)
     return rr.next_state
 
+
+
+def _safe_int(x: Any, default: int = 0) -> int:
+    try:
+        return int(x)
+    except Exception:
+        return default
+
+def _get_route_kind_any(obj: Any) -> Optional[str]:
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        v = obj.get("route_kind") or obj.get("kind") or obj.get("route")
+        if isinstance(v, str) and v.strip():
+            return v.strip().upper()
+        return None
+    for k in ("route_kind", "kind", "route"):
+        v = getattr(obj, k, None)
+        if isinstance(v, str) and v.strip():
+            return v.strip().upper()
+    return None
