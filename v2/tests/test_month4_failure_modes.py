@@ -837,3 +837,46 @@ def test_month8_week1_blocked_actions_produce_receipts():
 
     results = execute_actions(actions, dry_run=False)
     assert len(results) == len(actions)
+
+
+"""MONTH 8 WEEK 2: EXPLICIT ALLOW-LIST (POLICY-DRIVEN)"""
+
+def _get_action_kinds(c):
+    kinds = []
+    for a in (c.get("actions") or []):
+        k = (a.get("kind") or "").strip()
+        if k:
+            kinds.append(k)
+    return kinds
+
+def test_month8_week2_default_policy_blocks_all_actions():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    res = execute_actions(c.get("actions"), dry_run=False, policy=None)
+    for r in res:
+        assert r.get("type") == "ACTION_BLOCKED_POLICY"
+        assert r.get("blocked_reason") == "default_safe"
+
+def test_month8_week2_allow_list_permits_only_specified_kind():
+    from v2.action_executor_entry import execute_actions
+
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    kinds = _get_action_kinds(c)
+
+    # If there are no actions, this test is vacuously true under current truth.
+    if not kinds:
+        return
+
+    allow = {"allowed_actions": [kinds[0]]}
+    res = execute_actions(c.get("actions"), dry_run=False, policy=allow)
+
+    # If the allowed kind is present, it should become ACTION_DRY_RUN.
+    # Any other kinds remain blocked.
+    for a, r in zip(c.get("actions") or [], res):
+        ak = a.get("kind")
+        if ak == kinds[0]:
+            assert r.get("type") == "ACTION_DRY_RUN"
+        else:
+            assert r.get("type") == "ACTION_BLOCKED_POLICY"

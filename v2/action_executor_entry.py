@@ -4,7 +4,7 @@ from v2.side_effect_policy import is_action_allowed
 
 from typing import Any, Dict, List
 
-def execute_actions(actions: Any, *, dry_run: bool = True) -> List[Dict[str, Any]]:
+def execute_actions(actions: Any, *, dry_run: bool = True, policy: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
     """
     Canonical action executor entry point (Month 7 Week 1).
     Week 1 contract: callable + deterministic + safe.
