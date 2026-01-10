@@ -17,6 +17,9 @@ _ALLOWED_ACTIONS = {
     "SPOTIFY_COMMAND",
     "STATE_SET_AWAKE",
     "ENTER_TASK_INTAKE",
+    "TIME_READ",
+    "PRIORITY_GET",
+    "PRIORITY_SET",
 }
 
 
@@ -79,6 +82,23 @@ def validate_engine_output(obj: Any) -> Tuple[bool, str]:
             if "awake" not in p or not isinstance(p.get("awake"), bool):
                 return False, "STATE_SET_AWAKE awake must be bool"
 
+
+        if t == "TIME_READ":
+            # Read-only: payload may be empty dict
+            pass
+
+        if t == "PRIORITY_GET":
+            # Read-only: payload may be empty dict
+            pass
+
+        if t == "PRIORITY_SET":
+            # State change: allow item/priority to be present or omitted; payload must be dict (already enforced)
+            item = p.get("item", None)
+            pr = p.get("priority", None)
+            if item is not None and not isinstance(item, (str, int)):
+                return False, "PRIORITY_SET item must be str, int, or None"
+            if pr is not None and not isinstance(pr, (str, int)):
+                return False, "PRIORITY_SET priority must be str, int, or None"
         if t == "ENTER_TASK_INTAKE":
             if "enabled" not in p or not isinstance(p.get("enabled"), bool):
                 return False, "ENTER_TASK_INTAKE enabled must be bool"
