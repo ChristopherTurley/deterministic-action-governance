@@ -1,5 +1,17 @@
 from __future__ import annotations
 
+
+# V2_WEB_MIRROR_HELPER: mirror v2 web results into the same channels v1 OPEN_LINK uses
+def _v2_mirror_last_web(app, items):
+    try:
+        if hasattr(app, 'store') and hasattr(app.store, 'set_last_web'):
+            app.store.set_last_web(items)
+    except Exception:
+        pass
+    try:
+        setattr(app, '_last_web_items', items)
+    except Exception:
+        pass
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -111,14 +123,71 @@ def execute_actions(app: Any, request_id: str, actions: List[Dict[str, Any]]) ->
                 continue
 
             if at == "WEB_LOOKUP_QUERY":
+                # V2_WEB_ATTEMPT_MARKER: record last web attempt + mirror results for OPEN_LINK_INDEX truthfulness
+                try:
+                    setattr(app, "_last_web_attempted", True)
+                except Exception:
+                    pass
                 q = str(payload.get("query", "") or "").strip()
                 txt = app._handle_web_lookup(q)
+                # V2_WEB_FORCE_EMPTY_MIRROR: ensure OPEN_LINK_INDEX can be truthful even when search returns 0 results
+                try:
+                    txt_str = txt if isinstance(txt, str) else ""
+                    # If the handler said "No results found", explicitly record an empty result set.
+                    if "No results found" in txt_str:
+                        try:
+                            setattr(app, "_last_web_items", [])
+                        except Exception:
+                            pass
+                        try:
+                            st = getattr(app, "store", None)
+                            fn = getattr(st, "set_last_web", None) if st is not None else None
+                            if callable(fn):
+                                fn([])
+                        except Exception:
+                            pass
+                    else:
+                        # Otherwise, mirror whatever the app stored.
+                        items2 = None
+                        try:
+                            st = getattr(app, "store", None)
+                            fn = getattr(st, "get_last_web", None) if st is not None else None
+                            if callable(fn):
+                                items2 = fn()
+                        except Exception:
+                            items2 = None
+                        if items2 is not None:
+                            try:
+                                setattr(app, "_last_web_items", items2)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
                 if isinstance(txt, str) and txt:
                     primary_text = txt
                 receipts.append(_receipt(request_id, at, payload, "SUCCESS", {"query": q}, None))
                 continue
 
             if at == "OPEN_LINK_INDEX":
+                # V2_OPEN_TRUTH_MARKER: if the last web search returned zero results, do not claim "search first"
+                try:
+                    attempted = bool(getattr(app, "_last_web_attempted", False))
+                    items = getattr(app, "_last_web_items", None)
+                    # V2_OPEN_TRUTH_STORE_FALLBACK: if _last_web_items is missing, consult store.get_last_web()
+                    if items is None:
+                        try:
+                            st = getattr(app, "store", None)
+                            fn = getattr(st, "get_last_web", None) if st is not None else None
+                            if callable(fn):
+                                items = fn()
+                        except Exception:
+                            pass
+                    if attempted and isinstance(items, list) and len(items) == 0:
+                        primary_text = "Your last web search returned no results, so there’s nothing to open. Try a different query."
+                        receipts.append({"action_type": at, "status": "SUCCESS", "request_id": request_id, "payload": payload, "artifact": {"opened": False, "reason": "no_results"} , "error": None})
+                        continue
+                except Exception:
+                    pass
                 target = payload.get("target", None)
                 txt = app._handle_open_link(target)
                 if isinstance(txt, str) and txt:

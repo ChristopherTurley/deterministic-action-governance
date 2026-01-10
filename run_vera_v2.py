@@ -91,6 +91,19 @@ def _strip_debug_fields(pds: Dict[str, Any]) -> Dict[str, Any]:
 
 
 class VeraAppV2Bridge(VeraApp):
+
+    def _fixed_action_ack(self, actions):
+        # Week 1: deterministic acknowledgements (no inference, fixed shape)
+        try:
+            for a in (actions or []):
+                if (a or {}).get("type") == "STATE_SET_AWAKE":
+                    awake = bool(((a or {}).get("payload") or {}).get("awake", True))
+                    if awake:
+                        return "Yes?"
+                    return "Going to sleep. Say 'Hey Vera' to wake me."
+        except Exception:
+            pass
+        return ""
     """
     Month 3 bridge runner:
     - Calls v1 router through v2 boundary (EngineOutput)
@@ -199,8 +212,9 @@ class VeraAppV2Bridge(VeraApp):
             except Exception:
                 _log_debug("ERROR", {"where": "apply_declared"})
                 pass
-
+        primary_text = ""
         receipts: List[Dict[str, Any]] = []
+        primary_text: str = ""
         if actions:
             try:
                 primary_text, receipts = execute_actions(self, request_id, actions)
@@ -220,14 +234,30 @@ class VeraAppV2Bridge(VeraApp):
             self._pds["awake"] = bool(getattr(self.store.state, "awake", True))
         except Exception:
             pass
-
         self._persist_if_dirty()
+        # Week 1 fix: avoid double-processing the same utterance.
+        # If v2 declared/executed actions, do NOT route again through v1 runtime for the same raw input.
+        if actions:
+            out = (primary_text or "").strip()
+            if not out:
+                out = (self._fixed_action_ack(actions) or "").strip()
 
-        out = super().process_one(raw_clean)
+            # Speech fallback: some routes declare actions but rely on v1 runtime to produce the spoken line.
+            # Keep v1 blocked for side-effect routes (web/open/spotify), but allow for speech-only flows.
+            if not out:
+                try:
+                    rk = str(getattr(eng, "route_kind", "") or "")
+                except Exception:
+                    rk = ""
+                if rk in ("START_DAY", "TIME", "MISSION", "PRIORITY_SET", "PRIORITY_GET"):
+                    out = (super().process_one(raw_clean) or "").strip()
+        else:
+            out = (super().process_one(raw_clean) or "").strip()
 
         if out:
             _log_debug("SPOKE", {"len": len(out)})
         return out
+
 
     def run(self) -> None:
         try:
