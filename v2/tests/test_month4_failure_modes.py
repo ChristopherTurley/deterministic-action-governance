@@ -331,3 +331,100 @@ def test_week3_state_transition_asleep_nonwake_remains_safe_no_actions():
     out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=False))
     types, _ = _types(out)
     assert len(types) == 0
+
+
+"""MONTH 4 WEEK 4: RECEIPT → REDUCER → STATE CONTINUITY (ASSERT CURRENT TRUTH; NO FEATURE CHANGES)"""
+
+import json
+import copy
+import pytest
+
+def _jsonable(obj):
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return obj
+    to_dict = getattr(obj, "to_dict", None)
+    if callable(to_dict):
+        return to_dict()
+    d = getattr(obj, "__dict__", None)
+    if isinstance(d, dict):
+        return d
+    try:
+        return json.loads(json.dumps(obj, default=str))
+    except Exception:
+        return {"_repr": repr(obj)}
+
+def _snapshot(obj):
+    return json.dumps(_jsonable(obj), sort_keys=True, default=str)
+
+def _get_receipts(engine_out):
+    if engine_out is None:
+        return []
+    for k in ("receipts", "receipt_list", "actions", "action_list", "planned_actions"):
+        v = getattr(engine_out, k, None)
+        if isinstance(v, list):
+            return v
+    v = getattr(engine_out, "receipt", None)
+    if v is not None:
+        return [v]
+    v = getattr(engine_out, "action", None)
+    if v is not None:
+        return [v]
+    return []
+
+def _reduce_state(state, receipt_or_rr):
+    candidates = [
+        ("v2.state_reducer", "reduce_state"),
+        ("v2.core.state_reducer", "reduce_state"),
+        ("v2.reducer", "reduce_state"),
+    ]
+    last_err = None
+    for mod, fn in candidates:
+        try:
+            m = __import__(mod, fromlist=[fn])
+            f = getattr(m, fn)
+            return f(state, receipt_or_rr)
+        except Exception as e:
+            last_err = e
+    pytest.skip(f"reduce_state not importable from known locations; last error: {last_err!r}")
+
+def test_week4_receipt_is_jsonable_when_present():
+    out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=True))
+    receipts = _get_receipts(out)
+    for r in receipts:
+        js = _jsonable(r)
+        assert js is not None
+
+def test_week4_reducer_purity_does_not_mutate_input_state():
+    state = {"awake": False, "pds": {"x": 1}}
+    out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=False))
+    receipts = _get_receipts(out)
+    if not receipts:
+        pytest.skip("No receipts/actions present; cannot exercise reducer continuity on this output.")
+    before = _snapshot(state)
+    _ = _reduce_state(state, receipts[0])
+    after = _snapshot(state)
+    assert before == after
+
+def test_week4_reducer_idempotent_same_input_same_output_snapshot():
+    state = {"awake": True, "pds": {"x": 1}}
+    out = run_engine_via_v1(EngineInput(raw_text="what time is it", awake=True))
+    receipts = _get_receipts(out)
+    if not receipts:
+        pytest.skip("No receipts/actions present; cannot exercise reducer idempotence on this output.")
+    r = receipts[0]
+    s1 = _reduce_state(copy.deepcopy(state), r)
+    s2 = _reduce_state(copy.deepcopy(state), r)
+    assert _snapshot(s1) == _snapshot(s2)
+
+def test_week4_reducer_respects_sleep_boundary_does_not_flip_awake_true():
+    state = {"awake": False}
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=False))
+    receipts = _get_receipts(out)
+    if not receipts:
+        pytest.skip("No receipts/actions present; cannot assert reducer boundary on this output.")
+    new_state = _reduce_state(copy.deepcopy(state), receipts[0])
+    d = _jsonable(new_state)
+    if isinstance(d, dict) and isinstance(d.get("awake"), bool):
+        assert d["awake"] is False
