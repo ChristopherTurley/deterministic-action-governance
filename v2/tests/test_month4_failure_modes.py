@@ -935,3 +935,47 @@ def test_month8_week3_reversibility_deterministic_for_same_input():
         s2 = _reduce_state(s2, x)
 
     assert _state_snapshot(s1) == _state_snapshot(s2)
+
+
+"""MONTH 8 WEEK 4: SIDE-EFFECTS CONTRACT DOC + INVARIANTS"""
+
+def test_month8_week4_contract_doc_exists_and_has_key_sections():
+    from pathlib import Path
+    p = Path("v2/docs/side_effects_contract_v1.md")
+    assert p.exists()
+    t = p.read_text(encoding="utf-8", errors="ignore")
+    for needle in [
+        "# V2 Side-Effects Contract v1",
+        "## Core Rules",
+        "## Receipt Types",
+        "ACTION_BLOCKED_POLICY",
+        "ACTION_DRY_RUN",
+        "reversal_id",
+        "undo_hint",
+    ]:
+        assert needle in t
+
+def test_month8_week4_invariant_default_deny_blocks_and_is_reversible():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    res = execute_actions(c.get("actions"), dry_run=False, policy=None)
+    for r in res:
+        assert r.get("type") == "ACTION_BLOCKED_POLICY"
+        assert r.get("blocked_reason") == "default_safe"
+        assert "reversal_id" in r
+        assert "undo_hint" in r
+
+def test_month8_week4_invariant_allow_list_never_real_exec_still_has_reversal_fields():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions") or []
+    if not actions:
+        return
+    allow = {"allowed_actions": [actions[0].get("kind")]}
+    res = execute_actions(actions, dry_run=False, policy=allow)
+    for r in res:
+        assert r.get("type") in ("ACTION_BLOCKED_POLICY", "ACTION_DRY_RUN")
+        assert "reversal_id" in r
+        assert "undo_hint" in r
