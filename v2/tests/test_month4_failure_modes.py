@@ -769,3 +769,46 @@ def test_month7_week3_executor_deterministic_for_same_actions():
     r1 = execute_actions(actions, dry_run=True)
     r2 = execute_actions(actions, dry_run=True)
     assert r1 == r2
+
+
+"""MONTH 7 WEEK 4: EXECUTOR RECEIPTS -> REDUCER AUDIT CONTINUITY"""
+
+def test_month7_week4_executor_receipts_update_reducer_audit_trail():
+    from v2.action_executor_entry import execute_actions
+    out = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c = to_contract_output(out, awake_fallback=True)
+    actions = c.get("actions") or []
+    receipts = execute_actions(actions, dry_run=True)
+
+    state = {"awake": True, "pds": {"x": 1}, "audit": {}}
+    for r in receipts:
+        state = _reduce_state(state, r)
+
+    d = _as_jsonable_state(state)
+    assert isinstance(d, dict)
+    audit = d.get("audit")
+    assert isinstance(audit, dict)
+
+    # If no actions were produced, receipts will be empty; allow that truth.
+    if receipts:
+        assert isinstance(audit.get("last_action_id"), str) and audit["last_action_id"].strip()
+        assert isinstance(audit.get("last_action_kind"), str) and audit["last_action_kind"].strip()
+
+def test_month7_week4_audit_deterministic_for_same_input():
+    from v2.action_executor_entry import execute_actions
+    out1 = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    out2 = run_engine_via_v1(EngineInput(raw_text="open https://example.com", awake=True))
+    c1 = to_contract_output(out1, awake_fallback=True)
+    c2 = to_contract_output(out2, awake_fallback=True)
+
+    r1 = execute_actions(c1.get("actions") or [], dry_run=True)
+    r2 = execute_actions(c2.get("actions") or [], dry_run=True)
+
+    s1 = {"awake": True, "audit": {}}
+    s2 = {"awake": True, "audit": {}}
+    for x in r1:
+        s1 = _reduce_state(s1, x)
+    for x in r2:
+        s2 = _reduce_state(s2, x)
+
+    assert _state_snapshot(s1) == _state_snapshot(s2)
