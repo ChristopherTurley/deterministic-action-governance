@@ -87,6 +87,32 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
             payload["query"] = str(q)
         actions.append({"type": "SPOTIFY_COMMAND", "payload": payload})
 
+    rk = str(getattr(rr, "route_kind", "") or "").strip().upper()
+
+    # TIME (read-only, but must be explicit for receipts)
+    if rk == "TIME":
+        actions.append({"type": "TIME_READ", "payload": {}})
+
+    # PRIORITY
+    if rk == "PRIORITY_GET":
+        actions.append({"type": "PRIORITY_GET", "payload": {}})
+
+    if rk == "PRIORITY_SET":
+        payload = payload if isinstance(payload, dict) else {}
+        actions.append({"type": "PRIORITY_SET", "payload": payload})
+
+    # START DAY -> intake action
+    if rk == "START_DAY":
+        actions.append({"type": "ENTER_TASK_INTAKE", "payload": {}})
+
+    # WAKE / SLEEP -> explicit awake state set
+    if rk == "WAKE":
+        actions.append({"type": "STATE_SET_AWAKE", "payload": {"awake": True}})
+
+    if rk == "SLEEP":
+        actions.append({"type": "STATE_SET_AWAKE", "payload": {"awake": False}})
+
+
     if kind == "WAKE":
         actions.append({"type": "STATE_SET_AWAKE", "payload": {"awake": True}})
 

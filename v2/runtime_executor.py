@@ -58,6 +58,58 @@ def execute_actions(app: Any, request_id: str, actions: List[Dict[str, Any]]) ->
                 receipts.append(_receipt(request_id, at, payload, "SUCCESS", {"enabled": enabled}, None))
                 continue
 
+            if at == "TIME_READ":
+                # Read-only: receipt required, no side effects beyond returning time info
+                iso = ""
+                tz = ""
+                try:
+                    # Prefer app-provided time if available
+                    fn = getattr(app, "_handle_time", None)
+                    if callable(fn):
+                        out = fn()
+                        if isinstance(out, dict):
+                            iso = str(out.get("iso", "") or "")
+                            tz = str(out.get("tz", "") or "")
+                    if not iso:
+                        from datetime import datetime, timezone
+                        iso = datetime.now(timezone.utc).isoformat()
+                        tz = "UTC"
+                except Exception:
+                    from datetime import datetime, timezone
+                    iso = datetime.now(timezone.utc).isoformat()
+                    tz = "UTC"
+                receipts.append(_receipt(request_id, at, payload, "SUCCESS", {"iso": iso, "tz": tz}, None))
+                continue
+
+            if at == "PRIORITY_GET":
+                # Read-only: receipt required
+                items = None
+                try:
+                    fn = getattr(app, "_handle_priority_get", None)
+                    if callable(fn):
+                        items = fn()
+                except Exception:
+                    items = None
+                meta = {"count": len(items) if isinstance(items, list) else 0}
+                receipts.append(_receipt(request_id, at, payload, "SUCCESS", meta, None))
+                continue
+
+            if at == "PRIORITY_SET":
+                # State change: still must be receipted (actual state mutation occurs inside app handler)
+                item = payload.get("item", None)
+                pr = payload.get("priority", None)
+                ok = True
+                try:
+                    fn = getattr(app, "_handle_priority_set", None)
+                    if callable(fn):
+                        fn(item, pr)
+                except Exception as e:
+                    ok = False
+                    receipts.append(_receipt(request_id, at, payload, "FAILURE", {"item": item, "priority": pr}, repr(e)))
+                    continue
+                receipts.append(_receipt(request_id, at, payload, "SUCCESS", {"item": item, "priority": pr, "ok": ok}, None))
+                continue
+
             if at == "WEB_LOOKUP_QUERY":
                 q = str(payload.get("query", "") or "").strip()
                 txt = app._handle_web_lookup(q)

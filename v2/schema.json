@@ -47,8 +47,18 @@
       "type": "string",
       "description": "Declared boundary actions. These are intents; execution is owned by the shell/runtime.",
       "enum": [
+        "ENTER_TASK_INTAKE",
+        "LLM_FALLBACK",
+        "MISSION",
+        "NOOP",
         "OPEN_LINK_INDEX",
-        "NOOP"
+        "PRIORITY_GET",
+        "PRIORITY_SET",
+        "SCREEN_SUMMARY",
+        "SPOTIFY_COMMAND",
+        "STATE_SET_AWAKE",
+        "TIME_READ",
+        "WEB_LOOKUP_QUERY"
       ]
     },
     "Action": {
