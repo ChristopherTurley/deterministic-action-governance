@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 import json
-
+import hashlib
 CONTRACT_VERSION = "v2_contract_v1"
+CONTEXT_VERSION = "context_v1"
 
 def _jsonable(obj: Any) -> Any:
     if obj is None:
@@ -25,6 +26,27 @@ def _jsonable(obj: Any) -> Any:
     except Exception:
         return {"_repr": repr(obj)}
 
+
+def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
+    if not isinstance(ctx, dict):
+        return {}
+    allowed = ("active_app", "local_date", "local_time", "screen_hint")
+    out: Dict[str, Any] = {}
+    for k in allowed:
+        v = ctx.get(k, None)
+        if v is None:
+            continue
+        out[k] = str(v)
+    return out
+
+def _extract_context_any(engine_out: Any) -> Dict[str, Any]:
+    ctx = _get_attr(engine_out, ["context"], None)
+    if isinstance(ctx, dict):
+        return _normalize_context_v1(ctx)
+    dbg = _get_attr(engine_out, ["debug"], None)
+    if isinstance(dbg, dict):
+        return _normalize_context_v1(dbg.get("context"))
+    return {}
 def _get_attr(obj: Any, keys: List[str], default=None):
     for k in keys:
         v = getattr(obj, k, None)
@@ -50,6 +72,8 @@ def to_contract_output(engine_out: Any, *, awake_fallback: bool) -> Dict[str, An
         "awake": awake,
         "route_kind": route_kind,
         "receipts": [_jsonable(r) for r in receipts],
+        "context_version": CONTEXT_VERSION,
+        "context": _extract_context_any(engine_out),
     }
 
 def apply_contract(engine_out: Any, *, awake_fallback: bool) -> Any:

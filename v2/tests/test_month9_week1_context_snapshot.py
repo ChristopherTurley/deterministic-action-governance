@@ -7,6 +7,10 @@ from v2.contract import to_contract_output
 from v2.state_reducer import reduce_pds
 
 
+def _next_state(x):
+    return getattr(x, 'next_state', x)
+
+
 def test_m9w1_contract_attaches_context_nonbinding():
     ctx = {
         "active_app": "Safari",
@@ -89,12 +93,14 @@ def test_m9w1_reducer_records_active_context_metadata_only():
     delta = {"awake": True, "mode": "IDLE", "active_context": {"active_app": "Safari"}}
 
     p1 = reduce_pds(copy.deepcopy(pds), delta)
-    p2 = reduce_pds(copy.deepcopy(p1), delta)
+    s1 = _next_state(p1)
+    p2 = reduce_pds(copy.deepcopy(s1), delta)
+    s2 = _next_state(p2)
 
-    assert isinstance(p1, dict)
-    assert p1.get("awake") is True
-    assert p1.get("mode") == "IDLE"
-    assert isinstance(p1.get("active_context"), dict)
-    assert p1["active_context"].get("active_app") == "Safari"
+    assert isinstance(s1, dict)
+    assert s1.get("awake") is True
+    assert s1.get("mode") == "IDLE"
+    assert isinstance(s1.get("active_context"), dict)
+    assert s1["active_context"].get("active_app") == "Safari"
     # Idempotent for same inputs
-    assert p1 == p2
+    assert s1 == s2
