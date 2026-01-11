@@ -1,7 +1,7 @@
 Deterministic Action Governance
 Execution Safety Semantics for AI-Assisted Systems
 
-Overview
+Overview:
 This repository documents a deterministic action governance model for AI-assisted systems that are capable of executing actions.
 The material focuses exclusively on how actions are authorized, validated, refused, and audited.
 It does not address intelligence quality, user experience design, or product strategy.
