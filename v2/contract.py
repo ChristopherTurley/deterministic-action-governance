@@ -8,8 +8,20 @@ SUGGESTIONS_VERSION = "suggestions_v1"
 REVIEW_CONTROLS_VERSION = "review_controls_v1"
 REVIEW_LEDGER_VERSION = "review_ledger_v1"
 REVIEW_CONFLICTS_VERSION = "review_conflicts_v1"
+COMMIT_CONTROLS_VERSION = "commit_controls_v1"
+COMMIT_REQUESTS_VERSION = "commit_requests_v1"
+COMMIT_CONFLICTS_VERSION = "commit_conflicts_v1"
 PROPOSED_ACTIONS_VERSION = "proposed_actions_v1"
 CONTEXT_VERSION = "context_v1"
+
+# Metadata-only action types (must NEVER produce receipts).
+META_ONLY_ACTION_TYPES = {
+    "SUGGESTION_ACCEPT",
+    "SUGGESTION_REJECT",
+    "SUGGESTION_DEFER",
+    "SUGGESTION_REVISE",
+    "PROPOSED_ACTION_COMMIT",
+}
 
 def _jsonable(obj: Any) -> Any:
     if obj is None:
@@ -230,6 +242,70 @@ def _m10w4_review_conflicts_from_contract(c: dict) -> list:
 
     return conflicts
 
+
+def _m11w1_commit_controls_from_contract(c: dict) -> dict:
+    # Month 11 Week 1: explicit commit gate DESIGN surface (no execution).
+    # Contract-only trust signals; deterministic.
+    return {
+        "allowed_verbs": ["commit"],
+        "format": "commit <proposal_id>",
+        "guarantees": [
+            "Commit emits metadata action only (PROPOSED_ACTION_COMMIT).",
+            "Commit never executes anything.",
+            "Commit does not change proposals; execution requires future explicit executor stage.",
+        ],
+    }
+
+
+def _m11w1_commit_requests_from_contract(c: dict) -> list:
+    # Derived strictly from explicit PROPOSED_ACTION_COMMIT actions.
+    acts = c.get("actions") or []
+    out = []
+    for a in acts:
+        if not isinstance(a, dict):
+            continue
+        kind = str(a.get("kind") or a.get("type") or "").upper().strip()
+        if kind != "PROPOSED_ACTION_COMMIT":
+            continue
+        payload = a.get("payload") if isinstance(a.get("payload"), dict) else {}
+        pid = str(payload.get("proposal_id") or "").strip()
+        if not pid:
+            continue
+        out.append({"proposal_id": pid})
+    return out
+
+
+def _m11w1_commit_conflicts_from_contract(c: dict) -> list:
+    # Contract-only diagnostics (no execution).
+    # Flag commit requests that reference unknown proposal ids (based on proposed_actions surface).
+    reqs = c.get("commit_requests") or []
+    pas = c.get("proposed_actions") or []
+
+    known = set()
+    if isinstance(pas, list):
+        for pa in pas:
+            if isinstance(pa, dict):
+                pid = str(pa.get("id") or "").strip()
+                if pid:
+                    known.add(pid)
+
+    conflicts = []
+    if isinstance(reqs, list):
+        for r in reqs:
+            if not isinstance(r, dict):
+                continue
+            pid = str(r.get("proposal_id") or "").strip()
+            if pid and pid not in known:
+                conflicts.append({
+                    "type": "UNKNOWN_PROPOSAL_ID",
+                    "proposal_id": pid,
+                    "detail": "Commit requested for proposal_id not present in proposed_actions (proposal-only surface).",
+                })
+
+    # Deterministic ordering
+    conflicts.sort(key=lambda x: (str(x.get("type") or ""), str(x.get("proposal_id") or "")))
+    return conflicts
+
 def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
     if not isinstance(ctx, dict):
         return {}
@@ -348,6 +424,10 @@ def _m6w3_canonicalize_contract_output(c):
     if not isinstance(actions, list):
         actions = []
 
+    # Receipts are side-effect evidence only. Strip metadata-only action types.
+    if isinstance(receipts, list):
+        receipts = [r for r in receipts if not (isinstance(r, dict) and str(r.get('type') or '') in META_ONLY_ACTION_TYPES)]
+
     c["receipts"] = [_m6w3_normalize_receipt(r) for r in receipts]
     c["actions"] = [a if isinstance(a, dict) else {"_repr": repr(a)} for a in actions]
     return c
@@ -379,6 +459,13 @@ def to_contract_output(*args, **kwargs):
         # M10W4: review conflict diagnostics (contract-only)
         c["review_conflicts_version"] = REVIEW_CONFLICTS_VERSION
         c["review_conflicts"] = _m10w4_review_conflicts_from_contract(c)
+        # M11W1: commit gate DESIGN surfaces (no execution)
+        c["commit_controls_version"] = COMMIT_CONTROLS_VERSION
+        c["commit_controls"] = _m11w1_commit_controls_from_contract(c)
+        c["commit_requests_version"] = COMMIT_REQUESTS_VERSION
+        c["commit_requests"] = _m11w1_commit_requests_from_contract(c)
+        c["commit_conflicts_version"] = COMMIT_CONFLICTS_VERSION
+        c["commit_conflicts"] = _m11w1_commit_conflicts_from_contract(c)
 
     # M9W4: proposal-only mapping (FINAL PASS; after actions normalization).
     if isinstance(c, dict):

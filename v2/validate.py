@@ -18,6 +18,7 @@ _ALLOWED_ACTIONS = {
     "SUGGESTION_REJECT",
     "SUGGESTION_DEFER",
     "SUGGESTION_REVISE",
+    "PROPOSED_ACTION_COMMIT",
     "SPOTIFY_COMMAND",
     "STATE_SET_AWAKE",
     "ENTER_TASK_INTAKE",
@@ -80,6 +81,12 @@ def validate_engine_output(obj: Any) -> Tuple[bool, str]:
             if not isinstance(sid, str) or not sid.strip():
                 return False, "SUGGESTION_ACCEPT suggestion_id must be non-empty string"
 
+        if t == "PROPOSED_ACTION_COMMIT":
+            pid = p.get("proposal_id", None)
+            if not isinstance(pid, str) or not pid.strip():
+                return False, "PROPOSED_ACTION_COMMIT proposal_id must be non-empty string"
+            return True, ""
+
         if t == "SPOTIFY_COMMAND":
             cmd = p.get("cmd", None)
             if not isinstance(cmd, str) or not cmd.strip():
@@ -126,6 +133,7 @@ def validate_engine_output(obj: Any) -> Tuple[bool, str]:
         return False, "debug must be dict"
 
     return True, ""
+
 
 
 def validate_named(name: str, obj: Any) -> Tuple[bool, str]:
