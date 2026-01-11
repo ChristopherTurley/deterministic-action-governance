@@ -157,6 +157,50 @@ def _error_output(code: str, detail: str) -> EngineOutput:
 def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
     raw = (inp.raw_text or "").strip()
 
+    # === M9W3_ACCEPT_SUGGESTION ===
+    # Deterministic, v2-only acceptance loop.
+    # - Never executes anything.
+    # - Emits an explicit action only when operator says: "accept <suggestion_id>"
+    m = re.match(r"^\s*accept\s+([A-Za-z0-9_\-]{3,64})\s*$", raw, flags=re.IGNORECASE)
+    if m:
+        sid = m.group(1)
+        out = EngineOutput(
+            route_kind="SUGGESTION_ACCEPT",
+            speak_text="",
+            actions=[{"type": "SUGGESTION_ACCEPT", "payload": {"suggestion_id": sid}}],
+            state_delta={"awake": bool(inp.awake), "mode": "IDLE"},
+            mode_set="IDLE",
+            followup_until_utc=None,
+            debug={"normalized": True, "accept": True, "suggestion_id": sid},
+            context=inp.context if isinstance(inp.context, dict) else None,
+        )
+        ok, err = validate_named("EngineOutput", out)
+        if not ok:
+            return _error_output("ERROR_SCHEMA_OUTPUT", err)
+        return out
+
+
+    # === M9W3_ACCEPT_PARSE ===
+    # Deterministic: explicit operator acceptance only. No inference. No execution.
+    m_accept = re.match(r"^\s*(accept)\s+([A-Za-z0-9_\-\.]+)\s*$", raw, flags=re.IGNORECASE)
+    if m_accept:
+        sid = str(m_accept.group(2) or "").strip()
+        out = EngineOutput(
+            route_kind="SUGGESTION_ACCEPT",
+            speak_text="",
+            actions=[{"type": "SUGGESTION_ACCEPT", "payload": {"suggestion_id": sid, "accepted": True}}],
+            state_delta={"awake": bool(inp.awake), "mode": "IDLE", "accepted_suggestion_id": sid},
+            mode_set="IDLE",
+            followup_until_utc=None,
+            debug={"accepted": True, "source": "explicit_operator_commit"},
+            context=_normalize_context_v1(inp.context),
+        )
+        ok, err = validate_named("EngineOutput", out)
+        if not ok:
+            return _error_output("ERROR_SCHEMA_OUTPUT", err)
+        return out
+
+
     norm = _normalize_web_search(raw)
     if norm.get("mode") == "FOLLOWUP":
         out = EngineOutput(

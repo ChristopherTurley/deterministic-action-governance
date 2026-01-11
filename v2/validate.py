@@ -14,6 +14,7 @@ _ALLOWED_ACTIONS = {
     "NOOP",
     "OPEN_LINK_INDEX",
     "WEB_LOOKUP_QUERY",
+    "SUGGESTION_ACCEPT",
     "SPOTIFY_COMMAND",
     "STATE_SET_AWAKE",
     "ENTER_TASK_INTAKE",
@@ -69,6 +70,12 @@ def validate_engine_output(obj: Any) -> Tuple[bool, str]:
             q = p.get("query", None)
             if not isinstance(q, str) or not q.strip():
                 return False, "WEB_LOOKUP_QUERY query must be non-empty string"
+
+
+        if t == "SUGGESTION_ACCEPT":
+            sid = p.get("suggestion_id", None)
+            if not isinstance(sid, str) or not sid.strip():
+                return False, "SUGGESTION_ACCEPT suggestion_id must be non-empty string"
 
         if t == "SPOTIFY_COMMAND":
             cmd = p.get("cmd", None)
