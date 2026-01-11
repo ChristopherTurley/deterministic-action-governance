@@ -7,6 +7,7 @@ CONTRACT_VERSION = "v2_contract_v1"
 SUGGESTIONS_VERSION = "suggestions_v1"
 REVIEW_CONTROLS_VERSION = "review_controls_v1"
 REVIEW_LEDGER_VERSION = "review_ledger_v1"
+REVIEW_CONFLICTS_VERSION = "review_conflicts_v1"
 PROPOSED_ACTIONS_VERSION = "proposed_actions_v1"
 CONTEXT_VERSION = "context_v1"
 
@@ -175,6 +176,60 @@ def _m10w3_review_ledger_from_contract(c: dict) -> list:
 
     return out
 
+
+def _m10w4_review_conflicts_from_contract(c: dict) -> list:
+    # Month 10 Week 4: conflict + redundancy guards (contract-only diagnostics).
+    # Derived strictly from review_ledger (metadata-only). No execution. Deterministic.
+    led = c.get("review_ledger") or []
+    if not isinstance(led, list) or not led:
+        return []
+
+    conflicts = []
+
+    # 1) Duplicate entries (same kind/sid/note)
+    seen = set()
+    dup_sids = set()
+    for e in led:
+        if not isinstance(e, dict):
+            continue
+        kind = str(e.get("kind") or "").strip()
+        sid = str(e.get("suggestion_id") or "").strip()
+        note = str(e.get("note") or "").strip() if "note" in e else ""
+        key = (kind, sid, note)
+        if key in seen and sid:
+            dup_sids.add(sid)
+        seen.add(key)
+
+    for sid in sorted(dup_sids):
+        conflicts.append({
+            "type": "DUPLICATE_ENTRY",
+            "suggestion_id": sid,
+            "detail": "Same review entry repeated (kind/suggestion_id/note).",
+        })
+
+    # 2) Conflicting verbs on same suggestion id (more than one unique kind)
+    by_sid = {}
+    for e in led:
+        if not isinstance(e, dict):
+            continue
+        sid = str(e.get("suggestion_id") or "").strip()
+        kind = str(e.get("kind") or "").strip()
+        if not sid or not kind:
+            continue
+        by_sid.setdefault(sid, set()).add(kind)
+
+    for sid in sorted(by_sid.keys()):
+        kinds = sorted(list(by_sid[sid]))
+        if len(kinds) > 1:
+            conflicts.append({
+                "type": "CONFLICTING_VERBS",
+                "suggestion_id": sid,
+                "verbs": kinds,
+                "detail": "Multiple different review verbs applied to the same suggestion_id.",
+            })
+
+    return conflicts
+
 def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
     if not isinstance(ctx, dict):
         return {}
@@ -321,6 +376,9 @@ def to_contract_output(*args, **kwargs):
         # M10W3: review ledger (metadata-only)
         c["review_ledger_version"] = REVIEW_LEDGER_VERSION
         c["review_ledger"] = _m10w3_review_ledger_from_contract(c)
+        # M10W4: review conflict diagnostics (contract-only)
+        c["review_conflicts_version"] = REVIEW_CONFLICTS_VERSION
+        c["review_conflicts"] = _m10w4_review_conflicts_from_contract(c)
 
     # M9W4: proposal-only mapping (FINAL PASS; after actions normalization).
     if isinstance(c, dict):
