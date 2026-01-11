@@ -5,6 +5,7 @@ import json
 import hashlib
 CONTRACT_VERSION = "v2_contract_v1"
 SUGGESTIONS_VERSION = "suggestions_v1"
+PROPOSED_ACTIONS_VERSION = "proposed_actions_v1"
 CONTEXT_VERSION = "context_v1"
 
 def _jsonable(obj: Any) -> Any:
@@ -46,6 +47,52 @@ def _m9w2_suggestions_from_context(ctx):
         "payload": {"context": ctx},
     }]
 
+
+def _m9w4_proposed_actions_from_contract(c):
+    # M9W4: proposal-only mapping
+    # - Never adds execution actions to `actions`
+    # - Only emits proposed actions when an explicit SUGGESTION_ACCEPT is present
+    if not isinstance(c, dict):
+        return []
+
+    acts = c.get("actions")
+    if not isinstance(acts, list):
+        acts = []
+
+    sid = None
+    for a in acts:
+        if not isinstance(a, dict):
+            continue
+        if str(a.get("kind") or "").upper() == "SUGGESTION_ACCEPT":
+            pld = a.get("payload") if isinstance(a.get("payload"), dict) else {}
+            sid = pld.get("suggestion_id")
+            break
+
+    if not isinstance(sid, str) or not sid.strip():
+        return []
+
+    ctx = c.get("context")
+    if not isinstance(ctx, dict):
+        ctx = {}
+
+    app = str(ctx.get("active_app") or "").strip()
+    hint = str(ctx.get("screen_hint") or "").strip()
+    q = f"{hint} {app}".strip() or "context"
+
+    pa = {
+        "kind": "WEB_LOOKUP_QUERY",
+        "payload": {"query": q},
+        "label": f"Proposed: search the web for “{q}”",
+        "reason": "Mapped from accepted suggestion + context_v1. Proposal-only (non-binding).",
+    }
+
+    # Stable id derived from sid+kind+payload (deterministic)
+    try:
+        pa["id"] = _m7w2_hash_id({"sid": sid, "kind": pa["kind"], "payload": pa["payload"]})
+    except Exception:
+        pa["id"] = _m7w2_hash_id({"sid": sid})
+
+    return [pa]
 def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
     if not isinstance(ctx, dict):
         return {}
@@ -82,6 +129,12 @@ def to_contract_output(engine_out: Any, *, awake_fallback: bool) -> Dict[str, An
         awake = bool(awake_fallback)
 
     receipts = _get_attr(engine_out, ["receipts", "receipt_list", "actions", "action_list", "planned_actions"], None)
+
+    # M9W3_SURFACE_ACTIONS: keep actions separate from receipts (contract surface)
+    actions = _get_attr(engine_out, ["actions", "action_list", "planned_actions"], None)
+    if not isinstance(actions, list):
+        actions = []
+
     if not isinstance(receipts, list):
         one = _get_attr(engine_out, ["receipt", "action"], None)
         receipts = [one] if one is not None else []
@@ -91,6 +144,7 @@ def to_contract_output(engine_out: Any, *, awake_fallback: bool) -> Dict[str, An
         "awake": awake,
         "route_kind": route_kind,
         "receipts": [_jsonable(r) for r in receipts],
+        "actions": [_jsonable(a) for a in actions],
         "context_version": CONTEXT_VERSION,
         "context": _extract_context_any(engine_out),
     }
@@ -174,6 +228,53 @@ def to_contract_output(*args, **kwargs):
             ctx = {}
         c["suggestions_version"] = SUGGESTIONS_VERSION
         c["suggestions"] = _m9w2_suggestions_from_context(ctx)
+
+    # M9W4: proposal-only suggested executions (never executed).
+    if isinstance(c, dict):
+        c["proposed_actions_version"] = PROPOSED_ACTIONS_VERSION
+        c["proposed_actions"] = _m9w4_proposed_actions_from_contract(c)
+
+    # M9W4: proposal-only mapping (FINAL PASS; after actions normalization).
+    if isinstance(c, dict):
+        c.setdefault("proposed_actions_version", "proposed_actions_v1")
+        if not isinstance(c.get("proposed_actions"), list):
+            c["proposed_actions"] = []
+
+        acts = c.get("actions")
+        if not isinstance(acts, list):
+            acts = []
+
+        sid = None
+        for a in acts:
+            if not isinstance(a, dict):
+                continue
+            k = a.get("kind") or a.get("type") or a.get("action_kind") or a.get("name") or ""
+            k = str(k).strip().upper()
+            if k == "SUGGESTION_ACCEPT":
+                pld = a.get("payload")
+                if not isinstance(pld, dict):
+                    pld = a.get("data") if isinstance(a.get("data"), dict) else {}
+                sid = pld.get("suggestion_id")
+                if isinstance(sid, str) and sid.strip():
+                    sid = sid.strip()
+                    break
+
+        # Only populate proposals after explicit accept.
+        if sid:
+            ctx = c.get("context")
+            if not isinstance(ctx, dict):
+                ctx = {}
+            app = str(ctx.get("active_app") or "").strip()
+            hint = str(ctx.get("screen_hint") or "").strip()
+            q = f"{hint} {app}".strip() or "context"
+
+            c["proposed_actions"] = [{
+                "id": _m7w2_hash_id({"sid": sid, "kind": "WEB_LOOKUP_QUERY", "payload": {"query": q}}),
+                "kind": "WEB_LOOKUP_QUERY",
+                "label": f"Proposed: search the web for “{q}”",
+                "reason": "Mapped from explicit SUGGESTION_ACCEPT + context_v1. Proposal-only (non-binding).",
+                "payload": {"query": q},
+            }]
     return _m6w3_canonicalize_contract_output(c)
 
 # === MONTH7W2_ACTION_NORMALIZATION ===
