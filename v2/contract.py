@@ -6,6 +6,7 @@ import hashlib
 CONTRACT_VERSION = "v2_contract_v1"
 SUGGESTIONS_VERSION = "suggestions_v1"
 REVIEW_CONTROLS_VERSION = "review_controls_v1"
+REVIEW_LEDGER_VERSION = "review_ledger_v1"
 PROPOSED_ACTIONS_VERSION = "proposed_actions_v1"
 CONTEXT_VERSION = "context_v1"
 
@@ -142,6 +143,37 @@ def _m10w2_review_controls_from_contract(c: dict) -> dict:
         "examples": examples,
         "commit_gate": {"implemented": False, "required_for_execution": True},
     }
+
+
+def _m10w3_review_ledger_from_contract(c: dict) -> list:
+    # Month 10 Week 3: operator-visible review ledger (metadata-only).
+    # Derived strictly from explicit review actions. No execution. No autonomy.
+    acts = c.get("actions") or []
+    out = []
+
+    for a in acts:
+        if not isinstance(a, dict):
+            continue
+        kind = str(a.get("kind") or a.get("type") or "").upper().strip()
+        if kind not in {"SUGGESTION_ACCEPT", "SUGGESTION_REJECT", "SUGGESTION_DEFER", "SUGGESTION_REVISE"}:
+            continue
+
+        payload = a.get("payload") if isinstance(a.get("payload"), dict) else {}
+        sid = str(payload.get("suggestion_id") or "").strip()
+        if not sid:
+            continue
+
+        entry = {"kind": kind, "suggestion_id": sid}
+
+        # Only revise carries a note (metadata only)
+        if kind == "SUGGESTION_REVISE":
+            note = str(payload.get("note") or "").strip()
+            if note:
+                entry["note"] = note
+
+        out.append(entry)
+
+    return out
 
 def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
     if not isinstance(ctx, dict):
@@ -286,6 +318,9 @@ def to_contract_output(*args, **kwargs):
         # M10W2: review UX & trust signals (contract-only)
         c["review_controls_version"] = REVIEW_CONTROLS_VERSION
         c["review_controls"] = _m10w2_review_controls_from_contract(c)
+        # M10W3: review ledger (metadata-only)
+        c["review_ledger_version"] = REVIEW_LEDGER_VERSION
+        c["review_ledger"] = _m10w3_review_ledger_from_contract(c)
 
     # M9W4: proposal-only mapping (FINAL PASS; after actions normalization).
     if isinstance(c, dict):
