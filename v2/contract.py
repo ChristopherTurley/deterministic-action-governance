@@ -8,6 +8,7 @@ SUGGESTIONS_VERSION = "suggestions_v1"
 REVIEW_CONTROLS_VERSION = "review_controls_v1"
 REVIEW_LEDGER_VERSION = "review_ledger_v1"
 REVIEW_CONFLICTS_VERSION = "review_conflicts_v1"
+COMMIT_LEDGER_VERSION = "commit_ledger_v1"
 COMMIT_CONTROLS_VERSION = "commit_controls_v1"
 COMMIT_REQUESTS_VERSION = "commit_requests_v1"
 COMMIT_CONFLICTS_VERSION = "commit_conflicts_v1"
@@ -269,6 +270,60 @@ def _m11w2_commit_ack_from_contract(c: dict) -> list:
             "source_action_type": "PROPOSED_ACTION_COMMIT",
         })
     return out
+
+
+def _m11w3_commit_ledger_from_contract(c: dict) -> list:
+    # Month 11 Week 3: commit ledger (contract-only state).
+    # Deterministic and derived strictly from metadata surfaces.
+    # No execution. No receipts. No side effects.
+
+    # Prefer commit_requests if already computed, otherwise fall back to actions.
+    reqs = c.get("commit_requests")
+    if not isinstance(reqs, list):
+        reqs = []
+
+    actions = c.get("actions")
+    if not isinstance(actions, list):
+        actions = []
+
+    ack = c.get("commit_ack") or {}
+    if not isinstance(ack, dict):
+        ack = {}
+
+    out = []
+
+    # 1) Commit requests (deterministic order)
+    # Prefer commit_requests, else derive from actions (PROPOSED_ACTION_COMMIT).
+    if reqs:
+        for r in reqs:
+            if not isinstance(r, dict):
+                continue
+            pid = r.get("proposal_id")
+            if not isinstance(pid, str) or not pid.strip():
+                continue
+            out.append({"kind": "COMMIT_REQUEST", "proposal_id": pid})
+    else:
+        for a in actions:
+            if not isinstance(a, dict):
+                continue
+            if a.get("type") != "PROPOSED_ACTION_COMMIT":
+                continue
+            pld = a.get("payload") if isinstance(a.get("payload"), dict) else {}
+            pid = pld.get("proposal_id")
+            if not isinstance(pid, str) or not pid.strip():
+                continue
+            out.append({"kind": "COMMIT_REQUEST", "proposal_id": pid})
+
+    # 2) Commit ack (if present)
+    pid_ack = ack.get("proposal_id")
+    if isinstance(pid_ack, str) and pid_ack.strip():
+        out.append({
+            "kind": "COMMIT_ACK",
+            "proposal_id": pid_ack,
+            "status": str(ack.get("status") or "ACK"),
+        })
+
+    return out
 def _m11w1_commit_controls_from_contract(c: dict) -> dict:
     # Month 11 Week 1: explicit commit gate DESIGN surface (no execution).
     # Contract-only trust signals; deterministic.
@@ -490,6 +545,9 @@ def to_contract_output(*args, **kwargs):
         c["commit_ack_version"] = COMMIT_ACK_VERSION
         c["commit_ack"] = _m11w2_commit_ack_from_contract(c)
 
+        # M11W3: commit ledger (contract-only)
+        c["commit_ledger_version"] = COMMIT_LEDGER_VERSION
+        c["commit_ledger"] = _m11w3_commit_ledger_from_contract(c)
         # M11W1: commit gate DESIGN surfaces (no execution)
         c["commit_controls_version"] = COMMIT_CONTROLS_VERSION
         c["commit_controls"] = _m11w1_commit_controls_from_contract(c)
