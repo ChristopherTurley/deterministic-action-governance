@@ -161,6 +161,60 @@ def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
     # Deterministic, v2-only acceptance loop.
     # - Never executes anything.
     # - Emits an explicit action only when operator says: "accept <suggestion_id>"
+    # === M10W1_REVIEW_CONTROLS ===
+    # Deterministic, v2-only review controls.
+    # - Never executes anything.
+    # - Never generates proposals.
+    # - Emits explicit metadata actions only.
+    m = re.match(r"^\s*reject\s+([A-Za-z0-9_\-]{3,64})\s*$", raw, flags=re.IGNORECASE)
+    if m:
+        sid = m.group(1)
+        out = EngineOutput(
+            speak_text="",
+            state_delta={"awake": bool(inp.awake), "mode": "IDLE"},
+            mode_set="IDLE",
+            followup_until_utc=None,
+            route_kind="SUGGESTION_REJECT",
+            actions=[{"type": "SUGGESTION_REJECT", "payload": {"suggestion_id": sid}}],
+            debug={"normalized": True, "review": True, "verb": "reject", "suggestion_id": sid},
+            context=_normalize_context_v1(inp.context),
+        )
+        ok, _ = validate_named("EngineOutput", out)
+        return out
+
+    m = re.match(r"^\s*defer\s+([A-Za-z0-9_\-]{3,64})\s*$", raw, flags=re.IGNORECASE)
+    if m:
+        sid = m.group(1)
+        out = EngineOutput(
+            speak_text="",
+            state_delta={"awake": bool(inp.awake), "mode": "IDLE"},
+            mode_set="IDLE",
+            followup_until_utc=None,
+            route_kind="SUGGESTION_DEFER",
+            actions=[{"type": "SUGGESTION_DEFER", "payload": {"suggestion_id": sid}}],
+            debug={"normalized": True, "review": True, "verb": "defer", "suggestion_id": sid},
+            context=_normalize_context_v1(inp.context),
+        )
+        ok, _ = validate_named("EngineOutput", out)
+        return out
+
+    m = re.match(r"^\s*revise\s+([A-Za-z0-9_\-]{3,64})\s+(.+?)\s*$", raw, flags=re.IGNORECASE)
+    if m:
+        sid = m.group(1)
+        note = (m.group(2) or "").strip()
+        out = EngineOutput(
+            speak_text="",
+            state_delta={"awake": bool(inp.awake), "mode": "IDLE"},
+            mode_set="IDLE",
+            followup_until_utc=None,
+            route_kind="SUGGESTION_REVISE",
+            actions=[{"type": "SUGGESTION_REVISE", "payload": {"suggestion_id": sid, "note": note}}],
+            debug={"normalized": True, "review": True, "verb": "revise", "suggestion_id": sid},
+            context=_normalize_context_v1(inp.context),
+        )
+        ok, _ = validate_named("EngineOutput", out)
+        return out
+
     m = re.match(r"^\s*accept\s+([A-Za-z0-9_\-]{3,64})\s*$", raw, flags=re.IGNORECASE)
     if m:
         sid = m.group(1)
