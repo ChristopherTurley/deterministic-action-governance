@@ -157,6 +157,29 @@ def _error_output(code: str, detail: str) -> EngineOutput:
 def run_engine_via_v1(inp: EngineInput) -> EngineOutput:
     raw = (inp.raw_text or "").strip()
 
+
+    # === M11W1_COMMIT_GATE ===
+    # Deterministic, v2-only commit gate (proposal-only).
+    # - Never executes anything.
+    # - Emits explicit metadata action only when operator says: "commit <proposal_id>"
+    m = re.match(r"^\s*commit\s+([A-Za-z0-9_\-]{3,64})\s*$", raw, flags=re.IGNORECASE)
+    if m:
+        pid = m.group(1)
+        out = EngineOutput(
+            route_kind="PROPOSED_ACTION_COMMIT",
+            speak_text="",
+            actions=[{"type": "PROPOSED_ACTION_COMMIT", "payload": {"proposal_id": pid}}],
+            state_delta={"awake": bool(inp.awake), "mode": "IDLE"},
+            mode_set="IDLE",
+            followup_until_utc=None,
+            debug={"normalized": True, "commit": True, "proposal_id": pid},
+            context=_normalize_context_v1(inp.context),
+        )
+        ok, err = validate_named("EngineOutput", out)
+        if not ok:
+            return _error_output("ERROR_SCHEMA_OUTPUT", err)
+        return out
+
     # === M9W3_ACCEPT_SUGGESTION ===
     # Deterministic, v2-only acceptance loop.
     # - Never executes anything.
