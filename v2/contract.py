@@ -5,6 +5,7 @@ import json
 import hashlib
 CONTRACT_VERSION = "v2_contract_v1"
 SUGGESTIONS_VERSION = "suggestions_v1"
+REVIEW_CONTROLS_VERSION = "review_controls_v1"
 PROPOSED_ACTIONS_VERSION = "proposed_actions_v1"
 CONTEXT_VERSION = "context_v1"
 
@@ -93,6 +94,55 @@ def _m9w4_proposed_actions_from_contract(c):
         pa["id"] = _m7w2_hash_id({"sid": sid})
 
     return [pa]
+
+def _m10w2_review_controls_from_contract(c: dict) -> dict:
+    # Month 10 Week 2: Review UX & trust signals (contract-only).
+    # Absolutely no execution. No autonomy. No commit gate implemented yet.
+    sug = c.get("suggestions") or []
+    sid = ""
+    if isinstance(sug, list) and sug:
+        s0 = sug[0] or {}
+        if isinstance(s0, dict):
+            sid = str(s0.get("id") or "").strip()
+
+    verbs = [
+        {"verb": "accept", "requires": "<suggestion_id>", "effect": "Emits SUGGESTION_ACCEPT only (no execution). May create proposal-only proposed_actions."},
+        {"verb": "reject", "requires": "<suggestion_id>", "effect": "Emits SUGGESTION_REJECT only (no execution, no proposals)."},
+        {"verb": "defer",  "requires": "<suggestion_id>", "effect": "Emits SUGGESTION_DEFER only (no execution, no proposals)."},
+        {"verb": "revise", "requires": "<suggestion_id> <note>", "effect": "Emits SUGGESTION_REVISE with note only (no execution, no proposals)."},
+    ]
+
+    guardrails = [
+        "Suggestions are non-binding metadata only.",
+        "Proposed actions are proposal-only and never executed.",
+        "No autonomy. No inference-based execution.",
+        "Execution requires an explicit future COMMIT step (not implemented).",
+    ]
+
+    examples = []
+    if sid:
+        examples = [
+            f"accept {sid}",
+            f"reject {sid}",
+            f"defer {sid}",
+            f"revise {sid} clarify intent",
+        ]
+    else:
+        examples = [
+            "accept <suggestion_id>",
+            "reject <suggestion_id>",
+            "defer <suggestion_id>",
+            "revise <suggestion_id> <note>",
+        ]
+
+    return {
+        "title": "Review & control",
+        "verbs": verbs,
+        "guardrails": guardrails,
+        "examples": examples,
+        "commit_gate": {"implemented": False, "required_for_execution": True},
+    }
+
 def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
     if not isinstance(ctx, dict):
         return {}
@@ -233,6 +283,9 @@ def to_contract_output(*args, **kwargs):
     if isinstance(c, dict):
         c["proposed_actions_version"] = PROPOSED_ACTIONS_VERSION
         c["proposed_actions"] = _m9w4_proposed_actions_from_contract(c)
+        # M10W2: review UX & trust signals (contract-only)
+        c["review_controls_version"] = REVIEW_CONTROLS_VERSION
+        c["review_controls"] = _m10w2_review_controls_from_contract(c)
 
     # M9W4: proposal-only mapping (FINAL PASS; after actions normalization).
     if isinstance(c, dict):
