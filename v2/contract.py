@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 import json
 import hashlib
 CONTRACT_VERSION = "v2_contract_v1"
+SUGGESTIONS_VERSION = "suggestions_v1"
 CONTEXT_VERSION = "context_v1"
 
 def _jsonable(obj: Any) -> Any:
@@ -26,6 +27,24 @@ def _jsonable(obj: Any) -> Any:
     except Exception:
         return {"_repr": repr(obj)}
 
+
+def _m9w2_suggestions_from_context(ctx):
+    # M9W2: deterministic, non-binding suggestions derived ONLY from context.
+    # No actions. No execution. Advisory metadata only.
+    if not isinstance(ctx, dict) or not ctx:
+        return []
+    try:
+        raw = json.dumps(ctx, sort_keys=True, default=str).encode("utf-8")
+    except Exception:
+        raw = repr(ctx).encode("utf-8")
+    sid = hashlib.sha1(raw).hexdigest()[:12]
+    return [{
+        "id": f"ctx_{sid}",
+        "kind": "CONTEXT_NOTE",
+        "label": f"Context: {(ctx.get('active_app') or 'App')} — {(ctx.get('screen_hint') or 'No hint')}",
+        "reason": "Derived from context_v1 (active_app/screen_hint). Non-binding.",
+        "payload": {"context": ctx},
+    }]
 
 def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
     if not isinstance(ctx, dict):
@@ -147,6 +166,14 @@ _to_contract_output_impl_m6w3 = to_contract_output
 
 def to_contract_output(*args, **kwargs):
     c = _to_contract_output_impl_m6w3(*args, **kwargs)
+
+    # M9W2: suggestions surface (non-binding). Derived ONLY from context (already attached in Week 1).
+    if isinstance(c, dict):
+        ctx = c.get("context")
+        if not isinstance(ctx, dict):
+            ctx = {}
+        c["suggestions_version"] = SUGGESTIONS_VERSION
+        c["suggestions"] = _m9w2_suggestions_from_context(ctx)
     return _m6w3_canonicalize_contract_output(c)
 
 # === MONTH7W2_ACTION_NORMALIZATION ===
