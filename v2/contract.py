@@ -14,6 +14,8 @@ COMMIT_CONFLICTS_VERSION = "commit_conflicts_v1"
 PROPOSED_ACTIONS_VERSION = "proposed_actions_v1"
 CONTEXT_VERSION = "context_v1"
 
+COMMIT_ACK_VERSION = "commit_ack_v1"
+
 # Metadata-only action types (must NEVER produce receipts).
 META_ONLY_ACTION_TYPES = {
     "SUGGESTION_ACCEPT",
@@ -243,6 +245,30 @@ def _m10w4_review_conflicts_from_contract(c: dict) -> list:
     return conflicts
 
 
+
+def _m11w2_commit_ack_from_contract(c: dict) -> list:
+    # Month 11 Week 2: contract-only acknowledgement surface for commit gate.
+    # Derived strictly from normalized actions. Deterministic. No side effects.
+    acts = c.get("actions") or []
+    if not isinstance(acts, list) or not acts:
+        return []
+
+    out = []
+    for a in acts:
+        if not isinstance(a, dict):
+            continue
+        if a.get("type") != "PROPOSED_ACTION_COMMIT":
+            continue
+        p = a.get("payload") or {}
+        pid = p.get("proposal_id") if isinstance(p, dict) else None
+        if not isinstance(pid, str) or not pid.strip():
+            continue
+        out.append({
+            "proposal_id": pid,
+            "ack": True,
+            "source_action_type": "PROPOSED_ACTION_COMMIT",
+        })
+    return out
 def _m11w1_commit_controls_from_contract(c: dict) -> dict:
     # Month 11 Week 1: explicit commit gate DESIGN surface (no execution).
     # Contract-only trust signals; deterministic.
@@ -459,6 +485,11 @@ def to_contract_output(*args, **kwargs):
         # M10W4: review conflict diagnostics (contract-only)
         c["review_conflicts_version"] = REVIEW_CONFLICTS_VERSION
         c["review_conflicts"] = _m10w4_review_conflicts_from_contract(c)
+
+        # M11W2: commit acknowledgement (contract-only)
+        c["commit_ack_version"] = COMMIT_ACK_VERSION
+        c["commit_ack"] = _m11w2_commit_ack_from_contract(c)
+
         # M11W1: commit gate DESIGN surfaces (no execution)
         c["commit_controls_version"] = COMMIT_CONTROLS_VERSION
         c["commit_controls"] = _m11w1_commit_controls_from_contract(c)
