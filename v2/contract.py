@@ -387,6 +387,66 @@ def _m11w1_commit_conflicts_from_contract(c: dict) -> list:
     conflicts.sort(key=lambda x: (str(x.get("type") or ""), str(x.get("proposal_id") or "")))
     return conflicts
 
+
+def _m11w4_commit_conflicts_from_contract(c: dict) -> list:
+    # Month 11 Week 4: commit conflict diagnostics (contract-only).
+    # Deterministic. No execution. No receipts.
+    #
+    # IMPORTANT:
+    # - Some contract surfaces (commit_ledger) may intentionally be order-safe and de-duplicated.
+    # - Therefore, DUPLICATE_ENTRY must be derived from raw actions when present.
+    # - CONFLICTING_STATES is derived from commit_ledger kinds (if present).
+
+    conflicts = []
+
+    # 1) DUPLICATE_ENTRY: repeated PROPOSED_ACTION_COMMIT for same proposal_id (from actions)
+    actions = c.get("actions") or []
+    counts = {}
+    if isinstance(actions, list):
+        for a in actions:
+            if not isinstance(a, dict):
+                continue
+            t = str(a.get("type") or a.get("kind") or "").strip()
+            if t != "PROPOSED_ACTION_COMMIT":
+                continue
+            payload = a.get("payload") if isinstance(a.get("payload"), dict) else {}
+            pid = str(payload.get("proposal_id") or "").strip()
+            if not pid:
+                continue
+            counts[pid] = counts.get(pid, 0) + 1
+
+    for pid in sorted([k for k,v in counts.items() if v > 1]):
+        conflicts.append({
+            "type": "DUPLICATE_ENTRY",
+            "proposal_id": pid,
+            "detail": "Repeated PROPOSED_ACTION_COMMIT actions for same proposal_id.",
+        })
+
+    # 2) CONFLICTING_STATES: multiple kinds for same proposal_id (from commit_ledger)
+    led = c.get("commit_ledger") or []
+    if isinstance(led, list) and led:
+        by_pid = {}
+        for e in led:
+            if not isinstance(e, dict):
+                continue
+            pid = str(e.get("proposal_id") or "").strip()
+            kind = str(e.get("kind") or "").strip()
+            if not pid or not kind:
+                continue
+            by_pid.setdefault(pid, set()).add(kind)
+
+        for pid in sorted(by_pid.keys()):
+            kinds = sorted(list(by_pid[pid]))
+            if len(kinds) > 1:
+                conflicts.append({
+                    "type": "CONFLICTING_STATES",
+                    "proposal_id": pid,
+                    "kinds": kinds,
+                    "detail": "Multiple commit ledger kinds present for same proposal_id.",
+                })
+
+    return conflicts
+
 def _normalize_context_v1(ctx: Any) -> Dict[str, Any]:
     if not isinstance(ctx, dict):
         return {}
