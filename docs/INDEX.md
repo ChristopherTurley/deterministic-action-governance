@@ -95,6 +95,7 @@ This index is an engineer-first map of the repository documents.
 - `docs/coats/authority_attribution_coat_v1.md`
 - `docs/coats/execution_outcome_coat_v1.md`
 - `docs/coats/boundary_safety_coat_v1.md`
+- `docs/coats/audit_ledger_coat_v1.md`
 
 ---
 
