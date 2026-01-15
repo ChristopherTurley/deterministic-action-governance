@@ -37,7 +37,7 @@ The original context no longer exists.
 
 Behavior Without Governance
 
-At the scheduled time:
+At the explicitly invoked time (human-triggered):
 - The automation executes
 - Messages are sent to outdated recipients
 - Documents are archived incorrectly
