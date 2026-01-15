@@ -41,3 +41,7 @@ v2/demo/hat_session_ledger.json
 # Allow governance documentation
 !docs/
 !docs/**
+
+# Allow governance documentation
+!docs/
+!docs/**
