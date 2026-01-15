@@ -1,52 +1,62 @@
 # Deterministic Action Governance
 
+A deterministic, fail-closed governance layer for AI-assisted systems that are capable of executing actions.
+
+This repository documents **how execution is authorized, refused, and audited** — not how intelligence is produced.
+
+The core guarantee is simple:
+
+> **No externally meaningful action occurs without explicit, attributable human authority.**
+
+---
+
+## What this is
+
+This project defines and demonstrates a **deterministic execution governance model** that:
+
+- Treats all model output as **untrusted proposals**
+- Separates **proposal → decision → explicit commit**
+- Prefers refusal over unsafe or ambiguous execution
+- Produces auditable, reproducible outcomes
+- Makes failure visible and non-destructive
+
+The system is intentionally **fail-closed**.  
+If authority, context, or intent is unclear, **nothing happens**.
+
+---
+
+## What this is not
+
+This repository is explicitly **not**:
+
+- An autonomous agent
+- A consumer assistant
+- An automation platform
+- A UI or interaction design project
+- A permissions broker
+- A recommendation or strategy system
+
+It introduces **no autonomy** and makes **no claims about intelligence quality**.
+
+---
+
 ## Start here
-- `docs/START_HERE.md` (recommended entry)
-- `EVALUATE.md` (how to evaluate quickly)
-- `GLOSSARY.md` (terms)
-- `docs/INDEX.md` (full doc map)
 
-## Run (deterministic demos)
-- `./v2/demo/scripts/run_all_demos.sh`
-- `python3 run_vera_v2.py`
+For a structured evaluation path:
 
-## Trust anchors
-- `docs/invariants.md`
-- `docs/threat_model.md`
-- `docs/security_review_internal.md`
-A deterministic, fail-closed governance layer for AI-assisted systems that execute actions.  
-**It separates proposal → decision → explicit commit** and produces auditable outcomes **without autonomy**.
+- **`docs/START_HERE.md`** — recommended entry point
+- **`EVALUATE.md`** — how to assess this repository quickly
+- **`GLOSSARY.md`** — precise terminology
+- **`docs/INDEX.md`** — full documentation map
 
-[Start here: Evaluation Path](EVALUATE.md) • [Glossary](GLOSSARY.md) • [Docs Index](docs/INDEX.md)
+These documents are written to respect limited review time.
 
-## Guarantees
-- Suggestions do not execute implicitly
-- Execution requires explicit, attributable authority
-- Authorization is contextual (not permanent)
-- Conflicts are surfaced before execution
-- Refusal is a valid, correct system outcome
-- Externally meaningful actions are traceable
-- The system prefers doing nothing over acting under unclear authority
+---
 
-## Non-goals
-- Not an agent / not autonomous
-- Not a consumer product
-- Not an automation platform
-- Not a UI design repository
-- Not a permissions broker
+## Deterministic demos
 
-## Trust anchors
-- Invariants (constitution): `docs/invariants.md`
-- Refusal taxonomy: `docs/refusal_model.md`
-- Failure narratives: `docs/failure_modes.md`
-- Threat model: `docs/threat_model.md`
+The repository includes reproducible demos that exercise the governance model end-to-end:
 
-Guiding principle: **A system that cannot explain why it acted should not act.**
-## Public deposit lineage
-This repository contains an earlier published “public deposit” artifact set under:
-- `vera_v2_public_deposit/`
-
-That folder is retained as a historical reference package. The current recommended reading path is:
-- `EVALUATE.md`
-- `GLOSSARY.md`
-- `docs/INDEX.md`
+```bash
+./v2/demo/scripts/run_all_demos.sh
+python3 run_vera_v2.py
