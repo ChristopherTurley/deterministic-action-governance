@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
-cd "$(dirname "$0")/../.."
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+cd "$ROOT"
 PYTHONPATH=. python3 v2/bridge/run_hat_session.py \
   --hat TRADING_HAT_V1 \
   --context '{"instrument":"QQQ","time_of_day":"OPEN","volatility_state":"HIGH","liquidity_state":"GOOD","max_daily_loss":500,"daily_loss":0,"trades_taken_today":0,"trade_count_cap":3,"context_ttl_seconds":600}' \
