@@ -3,7 +3,7 @@
 ## Problem
 Most assistants optimize for fluency, not execution safety.
 When they act, it is often:
-- unclear what was proposed vs executed
+- Must always be explicit what was proposed vs what was explicitly committed; proposals never execute.
 - unclear why something was allowed or refused
 - non-deterministic across runs
 - difficult to audit

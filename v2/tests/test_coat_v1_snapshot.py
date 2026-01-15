@@ -1,7 +1,7 @@
 from v2.coat.coat_v1 import render_hat_event
 
 
-def test_coat_allow_snapshot():
+def test_coat_render_allow_reason_snapshot():
     e = {
         "type": "HAT_DECISION",
         "hat": "TRADING_HAT_V1",
