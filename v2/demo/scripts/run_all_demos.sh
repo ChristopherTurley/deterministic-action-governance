@@ -26,6 +26,10 @@ PYTHONPATH=. python3 v2/demo/trading_live_spoken_demo.py
 echo ""
 
 echo "=== 4) FOCUS HAT DEMO (second hat) ==="
+echo "=== 4a) FOCUS SPOKEN DEMO (opt-in voice, v1 untouched) ==="
+PYTHONPATH=. python3 v2/demo/focus_live_spoken_demo.py
+echo ""
+
 if [ -x v2/demo/scripts/demo_focus_hat_v1.sh ]; then
   v2/demo/scripts/demo_focus_hat_v1.sh
 else
