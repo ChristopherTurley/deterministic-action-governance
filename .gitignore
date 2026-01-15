@@ -36,3 +36,7 @@ v2/demo/hat_session_ledger.json
 # Allow root reader-experience docs
 !EVALUATE.md
 !GLOSSARY.md
+
+# Allow GitHub metadata (templates, policies)
+!.github/
+!.github/**
