@@ -71,9 +71,6 @@ This index is an engineer-first map of the repository documents.
 
 ## Hats
 
-## Coats
-- `docs/coats/refusal_coat_v1.md`
-
 - `docs/hats/reflection_hat_v1.md`
 - `docs/hats/README.md`
   Hat system overview and usage.
@@ -92,6 +89,9 @@ This index is an engineer-first map of the repository documents.
   - `docs/hats/high_focus_worker_hat_v1.md`
   - `docs/hats/designer_hat_v1.md`
   - `docs/hats/engineer_hat_v1.md`
+
+## Coats
+- `docs/coats/refusal_coat_v1.md`
 
 ---
 
