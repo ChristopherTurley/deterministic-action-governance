@@ -1,5 +1,19 @@
 # Deterministic Action Governance
 
+## Start here
+- `docs/START_HERE.md` (recommended entry)
+- `EVALUATE.md` (how to evaluate quickly)
+- `GLOSSARY.md` (terms)
+- `docs/INDEX.md` (full doc map)
+
+## Run (deterministic demos)
+- `./v2/demo/scripts/run_all_demos.sh`
+- `python3 run_vera_v2.py`
+
+## Trust anchors
+- `docs/invariants.md`
+- `docs/threat_model.md`
+- `docs/security_review_internal.md`
 A deterministic, fail-closed governance layer for AI-assisted systems that execute actions.  
 **It separates proposal → decision → explicit commit** and produces auditable outcomes **without autonomy**.
 
