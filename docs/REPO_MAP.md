@@ -14,7 +14,7 @@ Non-Negotiable Invariants
 
 Where Execution Begins (Airlock)
 - Entry points must be sterile airlocks: no flags, no branching, no intelligence.
-- If an entrypoint begins to parse args, read env, or select modes, it violates governance posture.
+- Entrypoints that parse args, read environment state, or select modes are incompatible with this governance posture.
 
 Canonical vs Non-Canonical Areas
 Canonical (authoritative, governance-bearing)
