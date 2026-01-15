@@ -48,3 +48,7 @@ v2/demo/hat_session_ledger.json
 
 # Allow root README for external intelligibility
 !README.md
+
+# Allow root reader-experience docs
+!EVALUATE.md
+!GLOSSARY.md
