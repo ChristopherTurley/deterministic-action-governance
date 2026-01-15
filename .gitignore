@@ -3,52 +3,36 @@
 
 # --- VERA: keep repo rules tracked ---
 !/.gitignore
-
 # --- VERA: keep code tracked ---
 !assistant/
 !assistant/**
-
 !run_vera.py
 !run_vera_v2.py
-
 !v2/
 !v2/**
-
-
 # --- VERA: ignore caches and build artifacts ---
 __pycache__/
 **/__pycache__/
 *.pyc
 .DS_Store
-
 # VERA local artifacts
 _archive/
 *.bak
 *.bak_*
 *.before_*
 *.broken_*
-
 v2/_pds/
 v2/_pds/**
-
 v2/_pds/_debug/
 v2/_pds/_debug/**
-
 # VERA demo outputs (generated)
 v2/_pds/_reports/
 v2/demo/hat_session_ledger.json
-
 # Allow governance documentation
 !docs/
 !docs/**
-
-# Allow governance documentation
-!docs/
-!docs/**
-
 # Allow root README for external intelligibility
 !README.md
-
 # Allow root reader-experience docs
 !EVALUATE.md
 !GLOSSARY.md

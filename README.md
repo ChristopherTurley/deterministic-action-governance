@@ -28,3 +28,11 @@ A deterministic, fail-closed governance layer for AI-assisted systems that execu
 - Threat model: `docs/threat_model.md`
 
 Guiding principle: **A system that cannot explain why it acted should not act.**
+## Public deposit lineage
+This repository contains an earlier published “public deposit” artifact set under:
+- `vera_v2_public_deposit/`
+
+That folder is retained as a historical reference package. The current recommended reading path is:
+- `EVALUATE.md`
+- `GLOSSARY.md`
+- `docs/INDEX.md`
