@@ -40,6 +40,6 @@ A reviewer should be able to confirm:
 - Any change that increases power requires explicit invariant revision
 
 ---
-Status: Month 12 — External Intelligibility (Doc clarity only)  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 12 — External Intelligibility (Doc clarity only)
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

@@ -13,16 +13,16 @@ This is execution safety.
 
 ## What this proves
 
-1) Determinism  
+1) Determinism
 Same inputs produce the same outputs.
 
-2) Fail-closed defaults  
+2) Fail-closed defaults
 Missing context, stale context, missing fields, unknown hats -> REFUSE.
 
-3) Commit gates  
+3) Commit gates
 Proposal drift at commit time -> REQUIRE_RECOMMIT.
 
-4) Auditability  
+4) Auditability
 Each decision emits a ledger event with:
 - stage (PROPOSE / COMMIT)
 - decision (ALLOW / REFUSE / REQUIRE_RECOMMIT)

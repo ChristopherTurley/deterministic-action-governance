@@ -38,4 +38,3 @@ On local_date change:
 - Close followup (open=false)
 - Carry unfinished tasks forward into inbox or unfinished list (never silently delete)
 - Reset active_context (conservative)
-

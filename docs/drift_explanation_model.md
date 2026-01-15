@@ -150,6 +150,6 @@ A reviewer should confirm:
 
 ---
 
-Status: Month 13 — Drift Explanation Artifacts  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 13 — Drift Explanation Artifacts
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

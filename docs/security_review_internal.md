@@ -48,6 +48,6 @@ Security reviewers evaluating containment, consent alignment, and drift resistan
 - No execution path exists without explicit commit
 
 ---
-Status: Month 11 — Semantic Hardening  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 11 — Semantic Hardening
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

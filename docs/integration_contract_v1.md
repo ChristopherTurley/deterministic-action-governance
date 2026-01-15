@@ -169,6 +169,6 @@ Detection is observational, not punitive.
 
 ---
 
-Status: Month 14 — Integration Contract v1  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 14 — Integration Contract v1
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

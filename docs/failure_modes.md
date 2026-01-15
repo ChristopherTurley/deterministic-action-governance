@@ -33,10 +33,10 @@ Each narrative is intentionally simple and repeatable.
 
 ### 1) Schema Validation Failure
 
-**Trigger**  
+**Trigger**
 Incoming proposal payload does not conform to the expected schema.
 
-**User sees**  
+**User sees**
 “Something went wrong while validating this request. No action was taken.”
 
 **Ledger records**
@@ -45,17 +45,17 @@ Incoming proposal payload does not conform to the expected schema.
 - action_taken: none
 - recoverable: yes
 
-**System does next**  
+**System does next**
 Nothing automatically. User must re-submit a valid request.
 
 ---
 
 ### 2) Missing Required Configuration
 
-**Trigger**  
+**Trigger**
 An optional integration is referenced but not configured.
 
-**User sees**  
+**User sees**
 “This capability isn’t configured. No action was taken.”
 
 **Ledger records**
@@ -64,17 +64,17 @@ An optional integration is referenced but not configured.
 - integration: <name>
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. Configuration must be completed explicitly.
 
 ---
 
 ### 3) External Dependency Unavailable
 
-**Trigger**  
+**Trigger**
 Required external service is unreachable (network, API down).
 
-**User sees**  
+**User sees**
 “This service is currently unavailable. No action was taken.”
 
 **Ledger records**
@@ -83,17 +83,17 @@ Required external service is unreachable (network, API down).
 - dependency: <name>
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. No retries, no background polling.
 
 ---
 
 ### 4) Ledger Write Failure
 
-**Trigger**  
+**Trigger**
 The system cannot persist the decision record safely.
 
-**User sees**  
+**User sees**
 “A system error occurred while recording this action. No action was taken.”
 
 **Ledger records**
@@ -101,17 +101,17 @@ The system cannot persist the decision record safely.
 - failure_type: LEDGER_WRITE_FAILURE
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. Execution is blocked because auditability is required.
 
 ---
 
 ### 5) Internal Exception (Caught)
 
-**Trigger**  
+**Trigger**
 An unexpected but handled exception occurs during processing.
 
-**User sees**  
+**User sees**
 “An internal error occurred. No action was taken.”
 
 **Ledger records**
@@ -120,17 +120,17 @@ An unexpected but handled exception occurs during processing.
 - exception_id: <opaque id>
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. No fallback behavior is allowed.
 
 ---
 
 ### 6) Context Serialization Failure
 
-**Trigger**  
+**Trigger**
 Context cannot be safely serialized or restored.
 
-**User sees**  
+**User sees**
 “Context could not be processed safely. No action was taken.”
 
 **Ledger records**
@@ -138,17 +138,17 @@ Context cannot be safely serialized or restored.
 - failure_type: CONTEXT_SERIALIZATION
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. User must restate context.
 
 ---
 
 ### 7) Determinism Guard Triggered
 
-**Trigger**  
+**Trigger**
 System detects non-deterministic routing or ambiguous internal state.
 
-**User sees**  
+**User sees**
 “The system could not proceed deterministically. No action was taken.”
 
 **Ledger records**
@@ -156,17 +156,17 @@ System detects non-deterministic routing or ambiguous internal state.
 - failure_type: DETERMINISM_GUARD
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. Ambiguity halts processing.
 
 ---
 
 ### 8) Timeout During Evaluation
 
-**Trigger**  
+**Trigger**
 Evaluation exceeds allowed time budget.
 
-**User sees**  
+**User sees**
 “The request timed out before a safe decision could be made. No action was taken.”
 
 **Ledger records**
@@ -174,17 +174,17 @@ Evaluation exceeds allowed time budget.
 - failure_type: EVALUATION_TIMEOUT
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. User may retry explicitly.
 
 ---
 
 ### 9) Corrupted Prior State Detected
 
-**Trigger**  
+**Trigger**
 Previously stored state fails integrity checks.
 
-**User sees**  
+**User sees**
 “A prior state issue was detected. No action was taken.”
 
 **Ledger records**
@@ -192,17 +192,17 @@ Previously stored state fails integrity checks.
 - failure_type: STATE_CORRUPTION
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. Manual recovery required.
 
 ---
 
 ### 10) Unsupported Runtime Environment
 
-**Trigger**  
+**Trigger**
 Runtime conditions do not meet required guarantees.
 
-**User sees**  
+**User sees**
 “This environment is not supported for safe operation. No action was taken.”
 
 **Ledger records**
@@ -210,7 +210,7 @@ Runtime conditions do not meet required guarantees.
 - failure_type: UNSUPPORTED_ENVIRONMENT
 - action_taken: none
 
-**System does next**  
+**System does next**
 Nothing. Environment must be corrected.
 
 ---
@@ -228,6 +228,6 @@ Failures preserve safety by doing nothing.
 
 ---
 
-Status: Month 11 — Failure Narratives v1  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 11 — Failure Narratives v1
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

@@ -84,6 +84,6 @@ It only identifies a missing primitive: **deterministic action governance**.
 
 ---
 
-Status: Month 12 — Apple Gap Mapping  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 12 — Apple Gap Mapping
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

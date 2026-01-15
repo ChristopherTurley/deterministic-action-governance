@@ -47,148 +47,148 @@ All Hat-level invariants **must** reference a reason code defined here.
 
 # Trading Hat (INV_TRADING_*)
 
-- INV_TRADING_MISSING_REQUIRED_FIELD  
+- INV_TRADING_MISSING_REQUIRED_FIELD
   Required trade fields not provided.
 
-- INV_TRADING_MAX_LOSS_PER_TRADE_EXCEEDED  
+- INV_TRADING_MAX_LOSS_PER_TRADE_EXCEEDED
   Proposed trade exceeds declared per-trade loss limit.
 
-- INV_TRADING_MAX_DAILY_LOSS_EXCEEDED  
+- INV_TRADING_MAX_DAILY_LOSS_EXCEEDED
   Proposed trade exceeds remaining daily loss capacity.
 
-- INV_TRADING_MAX_TRADES_PER_DAY_EXCEEDED  
+- INV_TRADING_MAX_TRADES_PER_DAY_EXCEEDED
   Proposed trade exceeds declared daily trade limit.
 
-- INV_TRADING_INSTRUMENT_NOT_ALLOWED  
+- INV_TRADING_INSTRUMENT_NOT_ALLOWED
   Instrument not permitted by trader declaration.
 
-- INV_TRADING_OUTSIDE_TIME_WINDOW  
+- INV_TRADING_OUTSIDE_TIME_WINDOW
   Trade proposed outside allowed trading hours.
 
-- INV_TRADING_OVERRIDE_REQUIRES_COMMIT  
+- INV_TRADING_OVERRIDE_REQUIRES_COMMIT
   Rule override attempted without explicit commit.
 
 ---
 
 # Ops / Incident Response Hat (INV_OPS_*)
 
-- INV_OPS_REQUIRES_EXPLICIT_COMMIT  
+- INV_OPS_REQUIRES_EXPLICIT_COMMIT
   High-risk operational action requires explicit authority.
 
-- INV_OPS_PRODUCTION_SCOPE_REQUIRES_CONFIRM  
+- INV_OPS_PRODUCTION_SCOPE_REQUIRES_CONFIRM
   Production-impacting changes require explicit confirmation.
 
-- INV_OPS_NO_BACKGROUND_RETRY  
+- INV_OPS_NO_BACKGROUND_RETRY
   Background retries or automatic recovery are not allowed.
 
-- INV_OPS_MISSING_CHANGE_SUMMARY  
+- INV_OPS_MISSING_CHANGE_SUMMARY
   Operational proposal missing required change context.
 
 ---
 
 # Platform Assistants Lens (INV_PLATFORM_*)
 
-- INV_PLATFORM_NO_PERMISSION_BROKERING  
+- INV_PLATFORM_NO_PERMISSION_BROKERING
   Hat must not broker or infer platform permissions.
 
-- INV_PLATFORM_NO_BACKGROUND_BEHAVIOR  
+- INV_PLATFORM_NO_BACKGROUND_BEHAVIOR
   Hat must not introduce background execution.
 
 ---
 
 # Education Hat (INV_EDU_*)
 
-- INV_EDU_NO_GRADING  
+- INV_EDU_NO_GRADING
   Grading or evaluation behavior is not allowed.
 
-- INV_EDU_NO_SURVEILLANCE  
+- INV_EDU_NO_SURVEILLANCE
   Monitoring or profiling learners is forbidden.
 
-- INV_EDU_INTEGRITY_BOUNDARY_VIOLATION  
+- INV_EDU_INTEGRITY_BOUNDARY_VIOLATION
   Proposal violates declared learning integrity constraints.
 
-- INV_EDU_MISSING_CONTEXT  
+- INV_EDU_MISSING_CONTEXT
   Required educational context not provided.
 
 ---
 
 # Healthcare Hat (INV_HEALTH_*)
 
-- INV_HEALTH_NO_DIAGNOSIS  
+- INV_HEALTH_NO_DIAGNOSIS
   Diagnostic behavior is forbidden.
 
-- INV_HEALTH_NO_TREATMENT_RECOMMENDATION  
+- INV_HEALTH_NO_TREATMENT_RECOMMENDATION
   Treatment recommendation is forbidden.
 
-- INV_HEALTH_CLINICIAN_AUTHORITY_REQUIRED  
+- INV_HEALTH_CLINICIAN_AUTHORITY_REQUIRED
   Explicit clinician authority is required.
 
-- INV_HEALTH_MISSING_REQUIRED_CONTEXT  
+- INV_HEALTH_MISSING_REQUIRED_CONTEXT
   Required clinical context not provided.
 
 ---
 
 # Competitive Sports Hat (INV_SPORTS_*)
 
-- INV_SPORTS_NO_OPTIMIZATION  
+- INV_SPORTS_NO_OPTIMIZATION
   Strategy optimization is not allowed.
 
-- INV_SPORTS_AUTHORITY_REQUIRED  
+- INV_SPORTS_AUTHORITY_REQUIRED
   Explicit authority required for competitive decisions.
 
-- INV_SPORTS_MISSING_CONTEXT  
+- INV_SPORTS_MISSING_CONTEXT
   Required game context not provided.
 
 ---
 
 # Executive Hat (INV_EXEC_*)
 
-- INV_EXEC_ROLE_AUTHORITY_REQUIRED  
+- INV_EXEC_ROLE_AUTHORITY_REQUIRED
   Decision requires appropriate executive authority.
 
-- INV_EXEC_NO_ADVICE  
+- INV_EXEC_NO_ADVICE
   Advisory or recommendation behavior is forbidden.
 
-- INV_EXEC_MISSING_CONTEXT  
+- INV_EXEC_MISSING_CONTEXT
   Required decision context not provided.
 
 ---
 
 # High-Focus Worker Hat (INV_FOCUS_*)
 
-- INV_FOCUS_NO_NUDGING  
+- INV_FOCUS_NO_NUDGING
   Nudging or behavioral manipulation is forbidden.
 
-- INV_FOCUS_CONSTRAINT_VIOLATION  
+- INV_FOCUS_CONSTRAINT_VIOLATION
   Proposal violates declared focus constraints.
 
-- INV_FOCUS_MISSING_CONTEXT  
+- INV_FOCUS_MISSING_CONTEXT
   Required focus context not provided.
 
 ---
 
 # Designer Hat (INV_DESIGN_*)
 
-- INV_DESIGN_NO_OPTIMIZATION  
+- INV_DESIGN_NO_OPTIMIZATION
   Aesthetic or creative optimization is forbidden.
 
-- INV_DESIGN_BOUNDARY_VIOLATION  
+- INV_DESIGN_BOUNDARY_VIOLATION
   Proposal violates declared creative boundaries.
 
-- INV_DESIGN_MISSING_CONTEXT  
+- INV_DESIGN_MISSING_CONTEXT
   Required design context not provided.
 
 ---
 
 # Engineer Hat (INV_ENG_*)
 
-- INV_ENG_AUTHORITY_REQUIRED  
+- INV_ENG_AUTHORITY_REQUIRED
   Explicit authority required for engineering changes.
 
-- INV_ENG_NO_ENFORCEMENT  
+- INV_ENG_NO_ENFORCEMENT
   Hat must not enforce execution or CI/CD behavior.
 
-- INV_ENG_MISSING_CONTEXT  
+- INV_ENG_MISSING_CONTEXT
   Required engineering context not provided.
 
 ---
@@ -202,5 +202,5 @@ A reviewer should confirm:
 
 ---
 
-Status: Hats v1 — Reason Codes Registry (Locked)  
+Status: Hats v1 — Reason Codes Registry (Locked)
 Review expectation: survives adversarial platform, legal, and security review

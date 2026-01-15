@@ -175,6 +175,6 @@ Refusal messages must be legible and consistent. The system may vary tone, but m
 
 ---
 
-Status: Month 11 — Refusal Taxonomy v1  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 11 — Refusal Taxonomy v1
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

@@ -57,6 +57,6 @@ It focuses on preventing silent authority escalation, unsafe execution, and drif
 - Logs can become sensitive if integrators over-collect
 
 ---
-Status: Month 11 — Semantic Hardening  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 11 — Semantic Hardening
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

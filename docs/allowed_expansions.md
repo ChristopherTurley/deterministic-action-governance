@@ -154,6 +154,6 @@ If removal changes behavior, it is not allowed under this document.
 
 ---
 
-Status: Month 15 — Allowed Expansions  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 15 — Allowed Expansions
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

@@ -242,7 +242,7 @@ Powerful tools enable silent risk.
 
 ## Shared safety rule (all hats)
 
-> A Hat may only **restrict or explain**.  
+> A Hat may only **restrict or explain**.
 > If a Hat enables, suggests, automates, or optimizes — it is forbidden.
 
 ---
@@ -266,6 +266,6 @@ A reviewer should confirm:
 
 ---
 
-Status: Month 15 — Future Governance Directions (Hats as Lenses, Ideas Only)  
-Change policy: non-binding; ideas may be removed without impact  
+Status: Month 15 — Future Governance Directions (Hats as Lenses, Ideas Only)
+Change policy: non-binding; ideas may be removed without impact
 Review expectation: written to survive adversarial review

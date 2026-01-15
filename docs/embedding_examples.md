@@ -134,6 +134,6 @@ These violate the integration contract.
 
 ---
 
-Status: Month 14 — Embedding Examples (Conceptual)  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 14 — Embedding Examples (Conceptual)
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

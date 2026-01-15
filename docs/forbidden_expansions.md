@@ -122,6 +122,6 @@ That feature is forbidden.
 
 ---
 
-Status: Month 15 — Forbidden Expansions  
-Change policy: this document is immutable without explicit invariant revision  
+Status: Month 15 — Forbidden Expansions
+Change policy: this document is immutable without explicit invariant revision
 Review expectation: written to survive adversarial review

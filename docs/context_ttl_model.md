@@ -116,6 +116,6 @@ A reviewer should confirm:
 
 ---
 
-Status: Month 13 — Context TTL Visibility  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 13 — Context TTL Visibility
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

@@ -59,7 +59,7 @@ Docs:
 
 ## Multi-hat Coexistence (Router v1)
 
-Explicit selection only (no guessing).  
+Explicit selection only (no guessing).
 Run:
 - `v2/demo/scripts/demo_multi_hat_router_v1.sh`
 
@@ -67,7 +67,7 @@ Run:
 
 ## Coat v1 (Stable Decision Rendering)
 
-Reason → message templates with snapshot tests (anti-drift).  
+Reason → message templates with snapshot tests (anti-drift).
 Run:
 - `v2/demo/scripts/demo_coat_v1.sh`
 

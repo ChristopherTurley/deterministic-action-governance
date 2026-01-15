@@ -162,6 +162,6 @@ The ledger records **governance**, not behavior.
 
 ---
 
-Status: Month 13 — Ledger Timeline Clarity  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 13 — Ledger Timeline Clarity
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

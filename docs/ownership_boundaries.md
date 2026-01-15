@@ -119,6 +119,6 @@ that feature is forbidden.
 
 ---
 
-Status: Month 14 — Ownership Boundaries  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 14 — Ownership Boundaries
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

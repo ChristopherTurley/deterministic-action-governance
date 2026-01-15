@@ -3,8 +3,8 @@
 This document is a **hard constraint list**.
 If any item below is violated, the system is no longer VERA.
 
-This is not aspirational.  
-This is not configurable.  
+This is not aspirational.
+This is not configurable.
 This is not negotiable.
 
 ---
@@ -33,7 +33,7 @@ VERA will never:
 - Escalate from suggestion to action without a commit
 - Perform “best effort” execution
 
-All execution is external.  
+All execution is external.
 All execution is explicit.
 
 ---
@@ -120,11 +120,11 @@ VERA is a governance layer, not a decision-maker.
 
 ## Final Rule
 
-If a future feature requires violating anything above,  
+If a future feature requires violating anything above,
 that feature is forbidden.
 
 ---
 
-Status: Month 11 — Explicit Non-Goals  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 11 — Explicit Non-Goals
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review

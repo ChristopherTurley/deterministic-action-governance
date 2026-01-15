@@ -182,6 +182,6 @@ A reviewer should confirm:
 
 ---
 
-Status: Month 12 — Demo Harness Walkthrough  
-Change policy: clarification-only changes allowed; no power expansion without invariant revision  
+Status: Month 12 — Demo Harness Walkthrough
+Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review
