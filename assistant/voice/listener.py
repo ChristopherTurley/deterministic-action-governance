@@ -98,6 +98,26 @@ class VoiceListener:
     # Recording (silence-based)
     # ---------------------------
     def _record_until_silence(self) -> Optional[np.ndarray]:
+        # --- Phase C micro-patch: robust endpointing (v3) ---
+        # These can be overridden by runtime (we already set silence_hold_sec/hangover_sec there).
+        silence_hold_sec = float(getattr(self, 'silence_hold_sec', 0.55))
+        hangover_sec = float(getattr(self, 'hangover_sec', 0.25))
+        # NEW: don't allow cut-off until user has spoken long enough
+        min_speech_sec = float(getattr(self, 'min_speech_sec', 1.20))
+        # NEW: be slightly more forgiving about what counts as 'silence' (prevents slow speech chop)
+        silence_relax = float(getattr(self, 'silence_relax', 0.85))
+        # --- end micro-patch ---
+        
+        # --- Phase C micro-patch: configurable silence timing (v2) ---
+        silence_hold_sec = float(getattr(self, 'silence_hold_sec', 0.55))
+        hangover_sec = float(getattr(self, 'hangover_sec', 0.25))
+        # --- end micro-patch ---
+        # --- Phase C micro-patch: end-of-utterance padding (v1) ---
+        # Require a bit more silence before cutting off (prevents mid-sentence truncation)
+        silence_hold_sec = 0.55   # was effectively shorter; 0.45–0.65 is a good human-feel range
+        # After silence is detected, keep recording briefly (captures trailing syllables)
+        hangover_sec = 0.25
+        # --- end micro-patch ---
         if self._stop_event.is_set():
             return None
 
@@ -155,7 +175,12 @@ class VoiceListener:
                         else:
                             silence_run = 0
 
-                        if silence_run >= silence_frames_needed:
+                        spoken_sec = 0.0
+                        try:
+                            spoken_sec = (len(frames) * frame_len) / float(samplerate)
+                        except Exception:
+                            pass
+                        if silence_run >= silence_frames_needed and (spoken_sec >= min_speech_sec):
                             break
 
         except Exception:

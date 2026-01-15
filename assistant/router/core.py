@@ -47,6 +47,16 @@ def route_text(
     cleaned = _norm(stripped)
     cmd = _cmd(cleaned)
 
+    # --- Phase B micro-patch: wake-only + wake+help handling ---
+    # If the user only says the wake phrase, treat it as WAKE.
+    if has_wake and cmd == "":
+        return RouteResult(kind="WAKE", meta={}, cleaned=cleaned, requires_wake=False, raw=raw)
+
+    # If the user wakes and asks for help/capabilities, map to MISSION (handled in runtime).
+    if has_wake and cmd in ("what can you do", "what do you do", "help", "what are you"):
+        return RouteResult(kind="MISSION", meta={}, cleaned=cleaned, requires_wake=True, raw=raw)
+    # --- end micro-patch ---
+
     if not awake:
         if has_wake or cmd in ("wake", "wake up"):
             return RouteResult(kind="WAKE", meta={}, cleaned=cleaned, requires_wake=False, raw=raw)
@@ -80,6 +90,14 @@ def route_text(
         if re.match(r"^what did i (just )?say my (top )?priority was\??$", cleaned) or re.match(r"^what('?s| is) my (top )?priority\??$", cleaned):
             return RouteResult(kind="PRIORITY_GET", meta={}, cleaned=cleaned, requires_wake=True, raw=raw)
 
+# --- Phase C micro-patch: tolerate partial START_DAY ---
+    # Accept partial ASR fragments like 'start my-' when wake is present
+    if has_wake and (cmd.startswith('start my') or cleaned.startswith('start my')):
+        return RouteResult(kind='START_DAY', meta={'partial': True}, cleaned=cleaned, requires_wake=True, raw=raw)
+# --- end micro-patch ---
+# Phase C micro-patch: allow wake+start shorthand
+    if has_wake and cmd in ('start', 'start day'):
+        return RouteResult(kind='START_DAY', meta={'shorthand': True}, cleaned=cleaned, requires_wake=True, raw=raw)
     # Start day (now robust to punctuation)
     if cmd in ("start my day", "begin my day", "todays rundown", "today's rundown", "start the day"):
         return RouteResult(kind="START_DAY", meta={}, cleaned=cleaned, requires_wake=True, raw=raw)

@@ -1,0 +1,250 @@
+{
+  "version": 2,
+  "notes": "Golden vectors validate v1 router THROUGH v2 boundary. Assertions pin stable route kinds + key declared actions.",
+  "cases": [
+    {
+      "id": "t01",
+      "input": {
+        "raw_text": "hey vera",
+        "awake": true,
+        "wake_required": true
+      },
+      "assert": {
+        "route_kind_equals": "WAKE"
+      }
+    },
+    {
+      "id": "t02",
+      "input": {
+        "raw_text": "go to sleep",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "SLEEP"
+      }
+    },
+    {
+      "id": "t03",
+      "input": {
+        "raw_text": "start my day",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "START_DAY"
+      }
+    },
+    {
+      "id": "t04",
+      "input": {
+        "raw_text": "build my schedule",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "LLM_FALLBACK"
+      }
+    },
+    {
+      "id": "t05",
+      "input": {
+        "raw_text": "search the web for apple intelligence execution substrate",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "WEB_LOOKUP"
+      }
+    },
+    {
+      "id": "t06",
+      "input": {
+        "raw_text": "open 1",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "OPEN_LINK",
+        "actions_include": [
+          {
+            "type": "OPEN_LINK_INDEX",
+            "payload": {
+              "target": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "t07",
+      "input": {
+        "raw_text": "open 2",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "OPEN_LINK",
+        "actions_include": [
+          {
+            "type": "OPEN_LINK_INDEX",
+            "payload": {
+              "target": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "t08",
+      "input": {
+        "raw_text": "open 3",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "OPEN_LINK",
+        "actions_include": [
+          {
+            "type": "OPEN_LINK_INDEX",
+            "payload": {
+              "target": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "t09",
+      "input": {
+        "raw_text": "what are you",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "MISSION"
+      }
+    },
+    {
+      "id": "t10",
+      "input": {
+        "raw_text": "what time is it",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "TIME"
+      }
+    },
+    {
+      "id": "t11",
+      "input": {
+        "raw_text": "what is my priority",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "PRIORITY_GET"
+      }
+    },
+    {
+      "id": "t12",
+      "input": {
+        "raw_text": "what is my priority",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "PRIORITY_GET"
+      }
+    },
+    {
+      "id": "t13",
+      "input": {
+        "raw_text": "summarize my screen",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "SCREEN_SUMMARY"
+      }
+    },
+    {
+      "id": "t14",
+      "input": {
+        "raw_text": "play spotify",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "SPOTIFY"
+      }
+    },
+    {
+      "id": "t15",
+      "input": {
+        "raw_text": "pause spotify",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "LLM_FALLBACK"
+      }
+    },
+    {
+      "id": "t16",
+      "input": {
+        "raw_text": "random sentence that should fallback",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "LLM_FALLBACK"
+      }
+    },
+    {
+      "id": "t17",
+      "input": {
+        "raw_text": "hey vera",
+        "awake": false,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "WAKE"
+      }
+    },
+    {
+      "id": "t18",
+      "input": {
+        "raw_text": "open 1",
+        "awake": false,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "ASLEEP_IGNORE"
+      }
+    },
+    {
+      "id": "t19",
+      "input": {
+        "raw_text": "what time is it",
+        "awake": false,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "ASLEEP_IGNORE"
+      }
+    },
+    {
+      "id": "t20",
+      "input": {
+        "raw_text": "search the web for nvda earnings",
+        "awake": true,
+        "wake_required": false
+      },
+      "assert": {
+        "route_kind_equals": "WEB_LOOKUP"
+      }
+    }
+  ]
+}

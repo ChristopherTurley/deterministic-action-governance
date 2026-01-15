@@ -76,9 +76,46 @@ def search_duckduckgo(query: str, *, limit: int = 3) -> List[WebResult]:
     if not results:
         results = raw_results[:limit]
 
+
+    # WIKI_FALLBACK_V1: If DDG yields nothing, fall back to Wikipedia OpenSearch (stdlib-only).
+    try:
+        _has_results = bool(results)
+    except Exception:
+        _has_results = False
+
+    if not _has_results:
+        try:
+            import json
+            from urllib import request as _urllib_request, parse as _urllib_parse
+
+            _q = (query or "").strip()
+            if _q:
+                params = {
+                    "action": "opensearch",
+                    "search": _q,
+                    "limit": str(max(1, int(limit))),
+                    "namespace": "0",
+                    "format": "json",
+                }
+                api = "https://en.wikipedia.org/w/api.php?" + _urllib_parse.urlencode(params)
+                req = _urllib_request.Request(api, headers={"User-Agent": "VERA/1.0 (web_lookup)"})
+                with _urllib_request.urlopen(req, timeout=8) as resp:
+                    data = json.loads(resp.read().decode("utf-8", "replace"))
+
+                titles = data[1] if isinstance(data, list) and len(data) > 1 else []
+                descs  = data[2] if isinstance(data, list) and len(data) > 2 else []
+                urls   = data[3] if isinstance(data, list) and len(data) > 3 else []
+
+                out = []
+                for t, d, u in zip(titles, descs, urls):
+                    u = str(u or "").strip()
+                    if not u:
+                        continue
+                    out.append(WebResult(title=str(t or "").strip(), url=u, snippet=str(d or "").strip()))
+                results = out
+        except Exception:
+            results = []
     return results
-
-
 def spoken_compact(results: List[WebResult]) -> str:
     # Speak titles, not ad snippets
     titles = [r.title for r in results if r.title][:3]
