@@ -58,4 +58,4 @@ def test_coat_unknown_hat_snapshot():
         "proposal_fingerprint": "x",
     }
     out = render_hat_event(e)
-    assert out["spoken"] == "Refused. Refused: unknown hat NOPE."
+    assert out["spoken"] == "Refused. Refused: unknown hat NOPE (unknown_hat:NOPE)."

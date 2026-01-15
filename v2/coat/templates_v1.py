@@ -41,7 +41,7 @@ def template_for(reason: str) -> str:
 
     if reason.startswith("unknown_hat:"):
         name = reason.split(":", 1)[1]
-        return "Refused: unknown hat " + name + "."
+        return "Refused: unknown hat " + name + " (" + reason + ")."
 
     return REASON_TEMPLATES.get(reason, "Refused: policy rule triggered (" + reason + ").")
 
