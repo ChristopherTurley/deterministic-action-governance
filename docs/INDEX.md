@@ -93,6 +93,7 @@ This index is an engineer-first map of the repository documents.
 ## Coats
 - `docs/coats/refusal_coat_v1.md`
 - `docs/coats/authority_attribution_coat_v1.md`
+- `docs/coats/execution_outcome_coat_v1.md`
 
 ---
 
