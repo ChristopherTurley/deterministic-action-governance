@@ -36,3 +36,4 @@ v2/_pds/_debug/**
 
 # VERA demo outputs (generated)
 v2/_pds/_reports/
+v2/demo/hat_session_ledger.json
