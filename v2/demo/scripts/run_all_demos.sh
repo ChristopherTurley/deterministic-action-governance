@@ -21,7 +21,7 @@ echo "=== 1) WEEK 2 TRADING HAT HARNESS (3 scenarios) ==="
 echo ""
 
 echo "=== 2) WEEK 3 TRADING OPEN SESSION QUICK DEMO (ALLOW + DRIFT) ==="
-./demo_trading_live_quick.sh
+bash v2/demo/scripts/demo_bridge_trading_hat.sh
 echo ""
 
 echo "=== 3) SPOKEN TRADING DEMO RUNNER (opt-in voice, v1 untouched) ==="
