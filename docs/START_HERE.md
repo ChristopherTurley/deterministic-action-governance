@@ -1,88 +1,68 @@
-# Start Here
+# VERA — Start Here (Required Onramp)
 
-This document is the fastest way to understand **what this repository is**, **what problem it solves**, and **how to evaluate it** without reading everything.
+VERA is a **deterministic execution governance layer**, not an assistant.
+It exists to prove (with tests + reproducible scenarios) that:
+- execution is never implicit
+- refusal is first-class and correct
+- behavior is reproducible across machines
+- the public artifact has **no side effects**
+- private execution is segregated from public proof
 
-If you only read one file, read this one.
+This repository is intentionally conservative.
+**Refusal is success. Inaction is correct.**
 
----
+## Required Reading Order (Non-Optional)
 
-## What problem this repository addresses
+If you read only one file, read this.
+If you read three files, read the following in order:
 
-Modern AI systems are increasingly capable of producing **real-world effects**:
-- executing commands
-- modifying state
-- triggering workflows
-- interacting with external systems
+1. `docs/START_HERE.md`
+2. `docs/vera_will_never.md`
+3. `docs/invariants.md` and `docs/refusal_model.md`
 
-The core risk is not intelligence — it is **execution ambiguity**.
+All conclusions about VERA are invalid unless you read those.
 
-Specifically:
-- When does a suggestion become an action?
-- Who authorized execution?
-- What context was relied on?
-- What happens when constraints conflict?
-- How does the system fail safely?
+## Authority Map (What Wins In A Conflict)
 
-This repository documents a deterministic model that answers those questions explicitly.
+- `v2/docs/` is the **canonical specification tied to code and tests**.
+- `docs/` is **conceptual + narrative** and must not contradict `v2/docs/`.
+- Tests in `v2/tests/` are the final enforcement layer.
+In case of conflict: **tests win**, then `v2/docs/`, then `docs/`.
 
----
+## Quick Verification (Proof First)
 
-## What this repository provides
+Run the suite and confirm VERA’s locked surfaces stay side-effect free:
 
-This repository defines and demonstrates a **deterministic action governance layer** that sits between:
+- `pytest -q` must be green
+- Key enforcement tests:
+- `v2/tests/test_no_side_effect_imports_in_locked_surfaces.py`
+- `v2/tests/test_domain_hats_registered_fail_closed_v1.py`
+- `v2/tests/test_unknown_hat_fail_closed_v1.py`
+- `v2/tests/test_coat_non_interference_v1.py`
+- `v2/tests/test_month12_public_artifact_docs_present.py`
 
-**intent → execution**
+## Public Reader Pack (Skeptic Bundle)
 
-Its primary function is to make execution behavior:
-- explicit
-- inspectable
-- auditable
-- fail-closed
+Start here for a fast external evaluation:
+- `v2/docs/public/README_PUBLIC.md`
+- `v2/docs/public/ONE_PAGER.md`
+- `v2/docs/public/DEMO_SCRIPT_VERBAL.md`
+- `v2/docs/public/MONTH12_PUBLIC_ARTIFACT_LOCK.md`
 
-The system enforces a strict lifecycle:
+## Platform Pressure Lane (Apple Gap Artifacts)
 
-**proposal → decision → explicit commit → execution or refusal**
+These are narrative artifacts that expose OS-level governance gaps.
+They do not change VERA’s authority model:
+- `docs/platform_gaps/APPLE_EXECUTION_GAP.md`
+- `docs/platform_gaps/APPLE_GAP_MAP_v1.md`
+- `docs/platform_gaps/APPLE_GAP_MAP_v2.md`
+- `docs/platform_gaps/APPENDIX_GOVERNANCE_CANNOT_BE_BOLTED_ON.md`
 
-Refusal is treated as a correct and expected outcome.
+## Credibility Signals (Read These If You Are Skeptical)
 
----
+- `docs/HOSTILE_REVIEW.md`
+- `docs/REMOVAL_SAFETY.md`
 
-## What this repository does NOT do
+## What VERA Will Not Do
 
-This repository intentionally avoids:
-
-- autonomous behavior
-- implicit execution
-- agent frameworks
-- intelligence claims
-- UX design guidance
-- automation abstractions
-- long-lived permissions
-
-If you are looking for an agent, this is not it.  
-If you are looking for a safety primitive, you are in the right place.
-
----
-
-## How to evaluate this work (recommended)
-
-You do **not** need to read everything.
-
-A minimal evaluation path:
-
-1. **Read the guarantees**
-   - See the “Guarantees” section in `README.md`
-   - Confirm they are enforced by contract, not convention
-
-2. **Inspect refusal behavior**
-   - `docs/refusal_model.md`
-   - `docs/failure_modes.md`
-   Look for explicit refusal reasons and non-ambiguous outcomes
-
-3. **Examine invariants**
-   - `docs/invariants.md`
-   These define what the system is *incapable* of doing
-
-4. **Run the demos**
-   ```bash
-   ./v2/demo/scripts/run_all_demos.sh
+See: `docs/vera_will_never.md` (this is the hard boundary).

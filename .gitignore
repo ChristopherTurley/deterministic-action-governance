@@ -1,3 +1,6 @@
+# VERA repo hygiene
+# Generated/maintained by tools/repo_polish.py
+
 # Created by venv; see https://docs.python.org/3/library/venv.html
 *
 
@@ -50,3 +53,13 @@ v2/demo/hat_session_ledger.json
 artifacts/
 *.tgz
 *.sha256
+# Python cache
+# macOS
+# venv
+venv/
+.venv/
+# local runner/private outputs
+vera_private_runner/
+vera_private_runner_NDA/
+data/
+*.log

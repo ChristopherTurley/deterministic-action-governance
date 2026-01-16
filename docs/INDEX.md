@@ -1,111 +1,62 @@
-# Documentation Index
+# VERA — Documentation Index (Navigation Spine)
 
-This index is an engineer-first map of the repository documents.
+This index defines **what is canonical** vs **what is informative**.
+Governance requires explicit authority. This file provides it.
 
----
+## Canonical (Normative)
 
-## Start here
+These define governance semantics and boundaries.
 
-1) Constitution and non-goals
-- `docs/invariants.md`
+- `docs/START_HERE.md`
+- `docs/REFERENCE_FREEZE.md`
 - `docs/vera_will_never.md`
-
-2) Refusal and failure semantics
+- `docs/invariants.md`
 - `docs/refusal_model.md`
-- `docs/failure_modes.md`
-
-3) Threat and security review
 - `docs/threat_model.md`
-- `docs/security_review_internal.md`
 
----
+Canonical spec tied to code + tests:
+- `v2/docs/` (wins in conflicts with `docs/`)
 
-## Month 12: external intelligibility
+Enforcement:
+- `v2/tests/` (final enforcement layer)
 
-- `docs/apple_gap_mapping.md`
-  Neutral platform gap framing, oriented to what current frameworks do not express safely.
+## Public Evaluation Pack (Skeptic Onramp)
 
-- `docs/demo_harness_walkthrough.md`
-  Walkthrough for deterministic demonstration, if demo harness exists in this repo.
+- `v2/docs/public/README_PUBLIC.md`
+- `v2/docs/public/ONE_PAGER.md`
+- `v2/docs/public/DEMO_SCRIPT_VERBAL.md`
+- `v2/docs/public/MONTH12_PUBLIC_ARTIFACT_LOCK.md`
 
----
+## Informative (Non-Normative)
 
-## Month 13: observability without control
+These explain concepts without changing authority.
 
-- `docs/ledger_timeline_model.md`
-  Proposal → decision → commit timeline clarity.
+### Hats (Domain Decision Layers, Not Capabilities)
 
-- `docs/drift_explanation_model.md`
-  Drift definitions and how to describe drift without adding control.
+- `docs/hats/README.md`
+- Domain hats in `docs/hats/*.md`
+
+### Coats (Explanation-Only Rendering, Non-Decisional)
+
+- `docs/coats/*`
+
+### Governance Models and Long-Run Architecture
 
 - `docs/context_ttl_model.md`
-  Context TTL visibility model and refusal expectations.
-
----
-
-## Month 14: integration readiness
-
+- `docs/drift_explanation_model.md`
+- `docs/ledger_timeline_model.md`
 - `docs/integration_contract_v1.md`
-  Integration contract and boundaries. VERA does not own execution.
-
-- `docs/embedding_examples.md`
-  Conceptual examples of embedding without SDK bloat.
-
 - `docs/ownership_boundaries.md`
-  What VERA does not own to prevent misuse.
-
----
-
-## Month 15: positioning and safe scale paths
-
+- `docs/failure_modes.md`
 - `docs/allowed_expansions.md`
-  Whitelist of power-neutral expansions.
-
 - `docs/forbidden_expansions.md`
-  Hard red lines that remain disallowed.
 
-- `docs/future_governance_directions.md`
-  Future direction ideas separated from current guarantees.
+### Platform Framing (Pressure Lane)
 
----
+- `docs/platform_gaps/*`
+- `docs/platform_framing.md`
+- `docs/pressure_narrative.md`
 
-## Hats
+## Private-Only Material
 
-- `docs/hats/reflection_hat_v1.md`
-- `docs/hats/README.md`
-  Hat system overview and usage.
-
-- `docs/hats/hat_reason_codes_registry_v1.md`
-  Canonical hat reason codes registry.
-
-- Domain hats
-  - `docs/hats/trading_hat_v1.md`
-  - `docs/hats/ops_incident_hat_v1.md`
-  - `docs/hats/platform_assistants_lens_v1.md`
-  - `docs/hats/education_hat_v1.md`
-  - `docs/hats/healthcare_hat_v1.md`
-  - `docs/hats/competitive_sports_hat_v1.md`
-  - `docs/hats/executive_hat_v1.md`
-  - `docs/hats/high_focus_worker_hat_v1.md`
-  - `docs/hats/designer_hat_v1.md`
-  - `docs/hats/engineer_hat_v1.md`
-
-## Coats
-- `docs/coats/refusal_coat_v1.md`
-- `docs/coats/authority_attribution_coat_v1.md`
-- `docs/coats/execution_outcome_coat_v1.md`
-- `docs/coats/boundary_safety_coat_v1.md`
-- `docs/coats/audit_ledger_coat_v1.md`
-
----
-
-## Reading guidance
-
-If you are evaluating safety and control:
-- start with invariants, refusal model, failure modes, and threat model
-
-If you are evaluating adoption and integration:
-- start with integration contract and ownership boundaries
-
-If you are evaluating whether this is an agent:
-- start with invariants and refusal model
+Anything under `docs/private/` is intentionally segregated and not part of the public evaluation surface.

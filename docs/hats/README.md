@@ -1,21 +1,10 @@
-# VERA Hats (Domain Governance Lenses)
+# Hats (Domain Decision Layers)
 
-Hats are **domain-specific governance lenses** that sit on top of the immutable VERA core.
+Hats are **not capabilities**.
+They are governance **lenses** that demonstrate how the same deterministic execution rules apply across domains.
 
-A Hat may:
-- declare domain proposal vocabulary (names only)
-- add domain invariants (refusal-only)
-- map refusal semantics into domain language (no new logic)
-- produce post-hoc explanation artifacts (read-only)
+- No hat expands authority.
+- Hats may refuse. Refusal is correct.
+- Hats must be compatible with fail-closed semantics.
 
-A Hat may **never**:
-- execute actions
-- suggest actions
-- automate behavior
-- infer or reuse authority
-- broker permissions
-- optimize outcomes
-- nudge users
-
-Removal test (non-negotiable):
-Removing a Hat must not change VERA core decision behavior.
+If you are looking for an SDK or a productivity assistant, this repository is not that.
