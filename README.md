@@ -98,6 +98,8 @@ Any drift requires explicit recommit.
 
 Canonical locked state:
 
+VERA_v2_QUICK_PROOF_LOCKED_SURFACES_GREEN_20260115
+
 
 ---
 
