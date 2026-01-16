@@ -1,62 +1,104 @@
-# Deterministic Action Governance
+# VERA — Deterministic Action Governance
 
-A deterministic, fail-closed governance layer for AI-assisted systems that are capable of executing actions.
+VERA is a **deterministic governance layer** designed to sit between *intent* and *action*.
 
-This repository documents **how execution is authorized, refused, and audited** — not how intelligence is produced.
+This repository is **not an AI agent**, **not an automation framework**, and **not a product demo**.
 
-The core guarantee is simple:
-
-> **No externally meaningful action occurs without explicit, attributable human authority.**
-
----
-
-## What this is
-
-This project defines and demonstrates a **deterministic execution governance model** that:
-
-- Treats all model output as **untrusted proposals**
-- Separates **proposal → decision → explicit commit**
-- Prefers refusal over unsafe or ambiguous execution
-- Produces auditable, reproducible outcomes
-- Makes failure visible and non-destructive
-
-The system is intentionally **fail-closed**.  
-If authority, context, or intent is unclear, **nothing happens**.
+It is a **reference implementation** proving that:
+- Actions can be governed deterministically
+- Refusal and inaction can be correct outcomes
+- Domain constraints can be enforced without hidden execution
+- AI systems do not need autonomy to be useful
 
 ---
 
-## What this is not
+## Core Principles
 
-This repository is explicitly **not**:
+VERA is built on the following invariants:
 
-- An autonomous agent
-- A consumer assistant
-- An automation platform
-- A UI or interaction design project
-- A permissions broker
-- A recommendation or strategy system
+- **Fail-Closed by Default**  
+  If something is unclear, missing, ambiguous, or unsafe — VERA refuses.
 
-It introduces **no autonomy** and makes **no claims about intelligence quality**.
+- **No Silent Execution**  
+  Every allowed action must pass through an explicit decision boundary.
 
----
+- **Deterministic Outcomes**  
+  The same inputs produce the same decisions. No hidden state. No background behavior.
 
-## Start here
+- **Refusals Are First-Class**  
+  A refusal is a successful outcome, not an error.
 
-For a structured evaluation path:
-
-- **`docs/START_HERE.md`** — recommended entry point
-- **`EVALUATE.md`** — how to assess this repository quickly
-- **`GLOSSARY.md`** — precise terminology
-- **`docs/INDEX.md`** — full documentation map
-
-These documents are written to respect limited review time.
+- **Governance Before Capability**  
+  This system exists to prove *control*, not convenience.
 
 ---
 
-## Deterministic demos
+## Architecture Overview
 
-The repository includes reproducible demos that exercise the governance model end-to-end:
+VERA separates governance into three layers:
 
-```bash
-./v2/demo/scripts/run_all_demos.sh
-python3 run_vera_v2.py
+### 1. Core (Locked)
+
+The core defines:
+- Decision flow
+- Proposal vs commit semantics
+- Event structure
+- Deterministic routing
+
+The core **does not**:
+- Execute side effects
+- Call external services
+- Perform automation
+
+---
+
+### 2. Hats — Domain Governance
+
+A **Hat** represents governance rules for a specific domain (e.g. trading, focus, healthcare).
+
+Each hat:
+- Receives a proposal
+- Returns a deterministic decision:
+  - `ALLOW`
+  - `REFUSE`
+  - `REQUIRE_RECOMMIT`
+- Provides explicit, namespaced reason codes
+
+Important:
+> A hat being present does **not** imply capability.
+
+Many hats in this repository are **intentional fail-closed stubs**.  
+These are not incomplete — they are **explicit refusals by design**.
+
+---
+
+### 3. Coats — Explanation Layer
+
+A **Coat** is a non-decisional rendering layer.
+
+It:
+- Translates decisions into stable, human-readable output
+- Preserves audit clarity
+- Never changes outcomes
+- Never adds intelligence
+
+---
+
+## Decision Lifecycle
+
+1. **PROPOSE**
+2. **COMMIT**
+3. **DRIFT DETECTION**
+
+Any drift requires explicit recommit.
+
+---
+
+## Status
+
+Canonical locked state:
+
+
+---
+
+End of document.
