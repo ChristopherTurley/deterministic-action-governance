@@ -34,6 +34,11 @@ VERA is built on the following invariants:
 ---
 
 ## Architecture Overview
+## Run the Proof
+
+- Canonical demo index: `v2/docs/demo_index.md`
+- Quick Proof: `v2/demo/scripts/run_quick_proof.sh`
+
 
 VERA separates governance into three layers:
 

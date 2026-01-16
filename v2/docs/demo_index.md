@@ -1,132 +1,18 @@
-# VERA v2 Demo Index (LOCKED SURFACES)
+# VERA v2 — Demo Index (Canonical)
 
-This folder contains operator-facing, versioned demo artifacts.
-These demos do not change runtime behavior.
+This repository is a **governance reference artifact**.
+It demonstrates deterministic decision boundaries, refusal clarity, and audit-legible surfaces.
 
-Core rule:
-- VERA v1 remains locked and unchanged.
-- v2 work is additive, modular, and fail-closed.
+## Canonical Locked State
+- Tag: `VERA_v2_QUICK_PROOF_LOCKED_SURFACES_GREEN_20260115`
 
----
+## Quick Start
+```bash
+python3 -m pytest -q
+v2/demo/scripts/run_quick_proof.sh
+```
 
-## One-command demo runner
-
-Run everything (tests + all demos):
-- `v2/demo/scripts/run_all_demos.sh`
-
----
-
-## Trading Hat v1
-
-### Week 2 — Deterministic Harness (3 scenarios)
-Run:
-- `./demo_trading_hat_v1.sh`
-
-Scenarios:
-- ALLOW (propose + commit)
-- REFUSE (risk)
-- REQUIRE_RECOMMIT (commit drift)
-
-### Week 3 — Open Session (interactive)
-Run:
-- `PYTHONPATH=. python3 v2/demo/trading_open_session.py`
-
-Copy/paste guide:
-- `v2/docs/trading_hat_v1_typed_demo.md`
-
-Verbal script + checklist:
-- `v2/docs/trading_hat_v1_demo.md`
-
-### Week 3 — Quick Live Demo (non-interactive)
-Run:
-- `./demo_trading_live_quick.sh`
-
-### Spoken Demo Runner (opt-in voice, v1 untouched)
-Run:
-- `PYTHONPATH=. python3 v2/demo/trading_live_spoken_demo.py`
-
----
-
-## Focus Hat v1 (Second Hat)
-
-Run:
-- `v2/demo/scripts/demo_focus_hat_v1.sh`
-
-Docs:
-- `v2/docs/focus_hat_v1_demo.md`
-
----
-
-## Multi-hat Coexistence (Router v1)
-
-Explicit selection only (no guessing).
-Run:
-- `v2/demo/scripts/demo_multi_hat_router_v1.sh`
-
----
-
-## Coat v1 (Stable Decision Rendering)
-
-Reason → message templates with snapshot tests (anti-drift).
-Run:
-- `v2/demo/scripts/demo_coat_v1.sh`
-
-Docs:
-- `v2/docs/coat_v1.md`
-
----
-
-## Bridge v1 (Opt-in CLI, v1 unchanged)
-
-Run Trading (drift -> REQUIRE_RECOMMIT):
-- `v2/demo/scripts/demo_bridge_trading_hat.sh`
-
-Run Focus (drift -> REQUIRE_RECOMMIT):
-- `v2/demo/scripts/demo_bridge_focus_hat.sh`
-
-Docs:
-- `v2/docs/bridge_v1.md`
-
----
-
-## Domain Hats v1 (Fail-Closed Surface Proof)
-
-These hats are intentionally non-executing stubs.
-They exist to prove:
-- naming + registration is canonical
-- routing works by explicit selection
-- outcomes fail closed deterministically
-- reasons remain namespaced (INV_*)
-
-Run:
-- `v2/demo/scripts/demo_domain_hats_fail_closed_v1.sh`
-
-
----
-
-## Universal Governance Demo v1 (Trading + Focus + Unknown + Coat)
-
-Single deterministic harness proving:
-- explicit hat selection
-- proposal vs commit separation
-- drift -> REQUIRE_RECOMMIT
-- unknown hat -> fail-closed + known_hats list
-- coat rendering (non-interfering)
-
-Run:
-- `v2/demo/scripts/demo_universal_governance_demo_v1.sh`
-
-
----
-
-## Audience-mode runners (locked)
-
-Quick proof (tests + universal + domain hats):
-- `v2/demo/scripts/run_quick_proof.sh`
-
-Investor 5-minute (tests + universal + trading + focus + coat):
-- `v2/demo/scripts/run_investor_5min.sh`
-
-Apple gap 5-minute (tests + universal + router + domain hats + coat):
-- `v2/demo/scripts/run_apple_gap_5min.sh`
-
+## Demos
+- Quick Proof: `v2/demo/scripts/run_quick_proof.sh`
+- Investor 5-min: `v2/demo/scripts/run_investor_5min.sh`
+- Apple Gap 5-min: `v2/demo/scripts/run_apple_gap_5min.sh`
