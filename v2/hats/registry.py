@@ -17,3 +17,19 @@ def get_hat(name: str):
     if n == "FOCUS_HAT_V1":
         return FocusHatV1()
     return None
+
+
+# === CANONICAL HAT REGISTRY TABLE (LOCKED) ===
+# This table is the single source of truth for hat registration.
+# It must exist before any appended registrations below.
+HAT_REGISTRY = {}
+
+# === CANONICAL HAT REGISTRATION (LOCKED) ===
+# Deterministic registration only. No execution, no branching behavior.
+
+from v2.hats.trading_hat_v1 import TradingHatV1
+
+# HAT_REGISTRY must already exist by invariant.
+HAT_REGISTRY["trading_hat_v1"] = TradingHatV1
+
+HAT_REGISTRY["TRADING_HAT_V1"] = TradingHatV1

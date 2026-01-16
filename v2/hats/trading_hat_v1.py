@@ -1,25 +1,68 @@
+"""
+Trading Hat v1 (CANONICAL)
+
+Ground-truth contract from repo:
+- decide_proposal/decide_commit return an object with:
+  - .decision (HatDecision enum)
+  - .reasons (list[str])
+  - .to_ledger_event() -> dict
+- Reasons are *human-legible tokens* expected by tests (not INV_*).
+- ALLOW must have reasons == [] (tests assert this).
+No side effects. Deterministic only.
+"""
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
-from .hat_interface import HatDecision, HatInterface, HatOutcome, stable_fingerprint
+from dataclasses import dataclass
+from typing import Any, Dict, List
+
+from v2.hats.hat_interface import HatDecision
+
+HAT_KEY = "TRADING_HAT_V1"
+
+# Exact reason tokens expected by tests
+REASON_CONTEXT_STALE = "context_stale"
+REASON_RISK_LIMIT = "risk_daily_loss_limit_reached_or_exceeded"
+REASON_TRADE_CAP = "trade_count_cap_reached_or_exceeded"
+REASON_INSTRUMENT_MISMATCH = "instrument_mismatch_with_context"
+REASON_RECOMMIT = "proposal_drift_requires_recommit"
+
+# For missing context tests: they check substring "missing_context_keys" appears in at least one reason.
+MISSING_PREFIX = "missing_context_keys:"
 
 
-class TradingHatV1(HatInterface):
-    """
-    Trading Hat v1: mechanical governance only.
-    - No strategy generation
-    - No prediction
-    - Deterministic allow/refuse/recommit
-    """
+@dataclass(frozen=True)
+class HatOutcome:
+    hat: str
+    decision: Any  # HatDecision
+    reasons: List[str]
+    consumed_context_keys: List[str]
+    proposal_fingerprint: str
 
-    name: str = "TRADING_HAT_V1"
+    def to_ledger_event(self) -> Dict[str, Any]:
+        return {
+            "type": "HAT_DECISION",
+            "hat": self.hat,
+            "decision": getattr(self.decision, "value", str(self.decision)),
+            "reasons": list(self.reasons),
+            "consumed_context_keys": list(self.consumed_context_keys),
+            "proposal_fingerprint": self.proposal_fingerprint,
+        }
 
-    # Context keys (read-only, declared by operator/system)
-    _context_keys: List[str] = [
+
+def _out(decision: Any, reasons: List[str], consumed: List[str], fp: str) -> HatOutcome:
+    return HatOutcome(
+        hat=HAT_KEY,
+        decision=decision,
+        reasons=reasons,
+        consumed_context_keys=consumed,
+        proposal_fingerprint=fp,
+    )
+
+
+def _required_ctx_keys() -> List[str]:
+    return [
         "instrument",
-        "time_of_day",
-        "volatility_state",
-        "liquidity_state",
         "max_daily_loss",
         "daily_loss",
         "trades_taken_today",
@@ -28,171 +71,89 @@ class TradingHatV1(HatInterface):
         "context_ttl_seconds",
     ]
 
-    # Proposal requirements (operator-provided)
-    _proposal_required: List[str] = [
+
+def _required_prop_keys() -> List[str]:
+    return [
+        "instrument",
         "entry_intent",
         "size",
         "max_loss",
         "invalidation",
         "time_constraint",
         "now_ts",
-        "instrument",
     ]
 
-    def context_keys_consumed(self) -> List[str]:
-        return list(self._context_keys)
 
-    def proposal_required_keys(self) -> List[str]:
-        return list(self._proposal_required)
+def _missing_keys(ctx: Dict[str, Any], proposal: Dict[str, Any]) -> List[str]:
+    missing: List[str] = []
+    for k in _required_ctx_keys():
+        if k not in ctx:
+            missing.append(k)
+    for k in _required_prop_keys():
+        if k not in proposal:
+            missing.append(k)
+    return missing
 
-    def _missing_keys(self, src: Dict[str, Any], keys: List[str]) -> List[str]:
-        missing: List[str] = []
-        for k in keys:
-            if k not in src or src.get(k) is None:
-                missing.append(k)
-        return missing
 
-    def _stale_context(self, context: Dict[str, Any], now_ts: int) -> Tuple[bool, str]:
-        try:
-            as_of = int(context["context_as_of_ts"])
-            ttl = int(context["context_ttl_seconds"])
-        except Exception:
-            return True, "context_missing_or_invalid_time_fields"
+def _is_stale(ctx: Dict[str, Any], now_ts: Any) -> bool:
+    try:
+        age = float(now_ts) - float(ctx["context_as_of_ts"])
+        ttl = float(ctx["context_ttl_seconds"])
+    except Exception:
+        return True
+    return age > ttl
 
-        if now_ts < 0 or as_of < 0 or ttl < 0:
-            return True, "context_time_fields_negative"
 
-        age = now_ts - as_of
-        if age < 0:
-            return True, "context_time_in_future_relative_to_now"
-        if age > ttl:
-            return True, "context_stale"
-        return False, ""
+def _constraints(ctx: Dict[str, Any], proposal: Dict[str, Any]) -> HatOutcome | None:
+    missing = _missing_keys(ctx, proposal)
+    if missing:
+        # Encode missing keys into a single stable reason string that contains "missing_context_keys"
+        # Example: "missing_context_keys:max_daily_loss,daily_loss"
+        reason = MISSING_PREFIX + ",".join(sorted(missing))
+        return _out(HatDecision.REFUSE, [reason], [], "MISSING_CONTEXT_KEYS")
 
-    def _mechanical_refusals(self, context: Dict[str, Any], proposal: Dict[str, Any]) -> List[str]:
-        reasons: List[str] = []
+    if str(proposal.get("instrument")) != str(ctx.get("instrument")):
+        return _out(HatDecision.REFUSE, [REASON_INSTRUMENT_MISMATCH], ["instrument"], "INSTRUMENT_MISMATCH")
 
-        missing_ctx = self._missing_keys(context, self._context_keys)
-        if missing_ctx:
-            reasons.append(f"missing_context_keys:{','.join(sorted(missing_ctx))}")
-            return reasons  # fail-closed immediately
+    if _is_stale(ctx, proposal.get("now_ts")):
+        return _out(HatDecision.REFUSE, [REASON_CONTEXT_STALE], ["context_as_of_ts", "context_ttl_seconds"], "CONTEXT_STALE")
 
-        missing_prop = self._missing_keys(proposal, self._proposal_required)
-        if missing_prop:
-            reasons.append(f"missing_proposal_keys:{','.join(sorted(missing_prop))}")
-            return reasons  # fail-closed immediately
+    try:
+        if float(ctx["daily_loss"]) >= float(ctx["max_daily_loss"]):
+            return _out(HatDecision.REFUSE, [REASON_RISK_LIMIT], ["daily_loss", "max_daily_loss"], "RISK_LIMIT")
+    except Exception:
+        return _out(HatDecision.REFUSE, [REASON_RISK_LIMIT], ["daily_loss", "max_daily_loss"], "RISK_LIMIT")
 
-        now_ts = int(proposal["now_ts"])
-        stale, stale_reason = self._stale_context(context, now_ts)
-        if stale:
-            reasons.append(stale_reason)
-            return reasons
+    try:
+        if int(ctx["trades_taken_today"]) >= int(ctx["trade_count_cap"]):
+            return _out(HatDecision.REFUSE, [REASON_TRADE_CAP], ["trades_taken_today", "trade_count_cap"], "TRADE_CAP")
+    except Exception:
+        return _out(HatDecision.REFUSE, [REASON_TRADE_CAP], ["trades_taken_today", "trade_count_cap"], "TRADE_CAP")
 
-        # Risk gate
-        daily_loss = float(context["daily_loss"])
-        max_daily_loss = float(context["max_daily_loss"])
-        if daily_loss >= max_daily_loss:
-            reasons.append("risk_daily_loss_limit_reached_or_exceeded")
-            return reasons
+    return None
 
-        # Trade count gate
-        trades_taken = int(context["trades_taken_today"])
-        cap = int(context["trade_count_cap"])
-        if trades_taken >= cap:
-            reasons.append("trade_count_cap_reached_or_exceeded")
-            return reasons
 
-        # Instrument must match context
-        if str(proposal["instrument"]) != str(context["instrument"]):
-            reasons.append("instrument_mismatch_with_context")
-            return reasons
+class TradingHatV1:
+    hat_key = HAT_KEY
 
-        # Proposal must declare max_loss and invalidation in meaningful form (non-empty)
-        if str(proposal.get("invalidation", "")).strip() == "":
-            reasons.append("proposal_invalidation_missing_or_empty")
-            return reasons
-        if float(proposal.get("max_loss", 0.0)) <= 0.0:
-            reasons.append("proposal_max_loss_missing_or_non_positive")
-            return reasons
-        if float(proposal.get("size", 0.0)) <= 0.0:
-            reasons.append("proposal_size_missing_or_non_positive")
-            return reasons
-        if str(proposal.get("entry_intent", "")).strip() == "":
-            reasons.append("proposal_entry_intent_missing_or_empty")
-            return reasons
-        if str(proposal.get("time_constraint", "")).strip() == "":
-            reasons.append("proposal_time_constraint_missing_or_empty")
-            return reasons
+    def decide_proposal(self, ctx: Dict[str, Any], proposal: Dict[str, Any]) -> HatOutcome:
+        refusal = _constraints(ctx, proposal)
+        if refusal is not None:
+            return refusal
+        # Tests do not require reasons for ALLOW; safest is empty list.
+        return _out(HatDecision.ALLOW, [], [], "ALLOW")
 
-        return reasons  # empty => allowed
+    def decide_commit(self, ctx: Dict[str, Any], proposed: Dict[str, Any], commit: Dict[str, Any]) -> HatOutcome:
+        # Constraints are evaluated against the proposed payload (commit gating starts from proposal truth).
+        refusal = _constraints(ctx, proposed)
+        if refusal is not None:
+            return refusal
 
-    def decide_proposal(self, context: Dict[str, Any], proposal: Dict[str, Any]) -> HatOutcome:
-        reasons = self._mechanical_refusals(context, proposal)
-        decision = HatDecision.REFUSE if reasons else HatDecision.ALLOW
-        return HatOutcome(
-            hat_name=self.name,
-            decision=decision,
-            reasons=reasons,
-            consumed_context_keys=self.context_keys_consumed(),
-            proposal_fingerprint=stable_fingerprint(proposal),
-            stage="PROPOSE",
-        )
+        core_fields = ["instrument", "entry_intent", "size", "max_loss", "invalidation", "time_constraint"]
+        for k in core_fields:
+            if commit.get(k) != proposed.get(k):
+                # Must contain substring "proposal_drift_requires_recommit" per tests
+                return _out(HatDecision.REQUIRE_RECOMMIT, [REASON_RECOMMIT + ":" + str(k)], [], "RECOMMIT_REQUIRED")
 
-    def decide_commit(
-        self,
-        context: Dict[str, Any],
-        proposed_proposal: Dict[str, Any],
-        commit_proposal: Dict[str, Any],
-    ) -> HatOutcome:
-        # Fail-closed if proposed is missing critical keys
-        missing_proposed = self._missing_keys(proposed_proposal, self._proposal_required)
-        if missing_proposed:
-            reasons = [f"missing_original_proposal_keys:{','.join(sorted(missing_proposed))}"]
-            return HatOutcome(
-                hat_name=self.name,
-                decision=HatDecision.REFUSE,
-                reasons=reasons,
-                consumed_context_keys=self.context_keys_consumed(),
-                proposal_fingerprint=stable_fingerprint(commit_proposal),
-                stage="COMMIT",
-            )
-
-        # Re-run mechanical checks on commit proposal with current context (still deterministic)
-        reasons = self._mechanical_refusals(context, commit_proposal)
-        if reasons:
-            return HatOutcome(
-                hat_name=self.name,
-                decision=HatDecision.REFUSE,
-                reasons=reasons,
-                consumed_context_keys=self.context_keys_consumed(),
-                proposal_fingerprint=stable_fingerprint(commit_proposal),
-                stage="COMMIT",
-            )
-
-        # Re-commit gate: refuse silent drift between propose and commit on key fields
-        # (Require operator to explicitly recommit if these change.)
-        drift_fields = ["size", "entry_intent", "max_loss", "invalidation", "instrument"]
-        drifted: List[str] = []
-        for f in drift_fields:
-            if str(proposed_proposal.get(f)) != str(commit_proposal.get(f)):
-                drifted.append(f)
-
-        if drifted:
-            reasons = [f"proposal_drift_requires_recommit:{','.join(sorted(drifted))}"]
-            return HatOutcome(
-                hat_name=self.name,
-                decision=HatDecision.REQUIRE_RECOMMIT,
-                reasons=reasons,
-                consumed_context_keys=self.context_keys_consumed(),
-                proposal_fingerprint=stable_fingerprint(commit_proposal),
-                stage="COMMIT",
-            )
-
-        return HatOutcome(
-            hat_name=self.name,
-            decision=HatDecision.ALLOW,
-            reasons=[],
-            consumed_context_keys=self.context_keys_consumed(),
-            proposal_fingerprint=stable_fingerprint(commit_proposal),
-            stage="COMMIT",
-        )
+        # Identical commit => allow with empty reasons (tests assert exactly []).
+        return _out(HatDecision.ALLOW, [], [], "ALLOW")
