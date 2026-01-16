@@ -113,3 +113,5 @@ End of document.
 ## Platform gap notes
 - docs/platform_gaps/APPLE_EXECUTION_GAP.md
 - docs/platform_gaps/APPLE_GAP_MAP_v2.md
+
+- Appendix: docs/platform_gaps/APPENDIX_GOVERNANCE_CANNOT_BE_BOLTED_ON.md
