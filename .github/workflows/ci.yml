@@ -24,4 +24,6 @@ jobs:
 
       - name: Run tests
         run: |
+      - name: Install test deps
+        run: python3 -m pip install --upgrade pip pytest
           pytest -q
