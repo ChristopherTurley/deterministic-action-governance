@@ -33,3 +33,5 @@ from v2.hats.trading_hat_v1 import TradingHatV1
 HAT_REGISTRY["trading_hat_v1"] = TradingHatV1
 
 HAT_REGISTRY["TRADING_HAT_V1"] = TradingHatV1
+
+HAT_REGISTRY["FOCUS_HAT_V1"] = FocusHatV1

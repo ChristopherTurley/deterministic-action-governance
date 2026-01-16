@@ -1,307 +1,213 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from v2.hats.hat_interface import HatDecision
-
-
-@dataclass(frozen=True)
-class HatOutcome:
-    decision: HatDecision
-    reasons: List[str]
-    consumed_context_keys: List[str]
-    proposal_fingerprint: str
-    hat: str
-    stage: str
-
-    def to_ledger_event(self) -> Dict[str, Any]:
-        return {
-            "type": "HAT_DECISION",
-            "hat": self.hat,
-            "stage": self.stage,
-            "decision": self.decision.value,
-            "reasons": list(self.reasons),
-            "consumed_context_keys": list(self.consumed_context_keys),
-            "proposal_fingerprint": self.proposal_fingerprint,
-        }
+from v2.hats.hat_interface import HatDecision, HatInterface, HatOutcome, stable_fingerprint
 
 
-def _stable_fingerprint(payload: Dict[str, Any]) -> str:
-    # Import locally to avoid global side effects.
-    import hashlib
-    import json
-
-    blob = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(blob).hexdigest()
-
-
-class FocusHatV1:
+class FocusHatV1(HatInterface):
     """
-    Focus Hat v1: deterministic enforcement of attention/session constraints.
-    - No strategy generation
-    - No autonomy
-    - Fail-closed validation
+    Focus Hat v1 (CANONICAL, TEST-DRIVEN)
+
+    Non-executing governance:
+    - validates context freshness (TTL)
+    - enforces task/minutes caps
+    - allows on happy path
+    - requires recommit on drift between proposed and commit payloads
     """
 
-    NAME = "FOCUS_HAT_V1"
+    name: str = "FOCUS_HAT_V1"
 
-    CONSUMED_CONTEXT_KEYS = [
-        "focus_mode",
-        "context_as_of_ts",
-        "context_ttl_seconds",
-        "task_count_cap",
-        "tasks_remaining",
-        "minutes_cap",
-        "minutes_remaining",
-    ]
+    # Exact reason strings expected by tests
+    REASON_CTX_MISSING_PREFIX = "context_missing_required_key:"
+    REASON_PROP_MISSING_PREFIX = "proposal_missing_required_key:"
+    REASON_CTX_STALE = "context_stale_ttl_exceeded"
+    REASON_TASK_EXCEEDS_CAP = "focus_task_count_exceeds_cap"
+    REASON_MINUTES_EXCEEDS_CAP = "focus_planned_minutes_exceeds_cap"
+    REASON_MINUTES_EXCEEDS_REMAINING = "focus_planned_minutes_exceeds_remaining"
+    REASON_RECOMMIT_PREFIX = "proposal_drift_requires_recommit:"
 
-    PROPOSAL_REQUIRED_KEYS = [
-        "task_count",
-    ]
-
-    # Optional proposal key
-    PROPOSAL_OPTIONAL_KEYS = [
-        "planned_minutes",
-    ]
-
-    def name(self) -> str:
-        return self.NAME
-
-    def consumed_context_keys(self) -> List[str]:
-        return list(self.CONSUMED_CONTEXT_KEYS)
-
-    def proposal_schema_requirements(self) -> List[str]:
-        return list(self.PROPOSAL_REQUIRED_KEYS)
-
-    def _validate_context(self, ctx: Dict[str, Any], now_ts: int) -> List[str]:
-        reasons: List[str] = []
-
-        required = [
+    def context_keys_consumed(self) -> List[str]:
+        # Declare what we read (audit clarity)
+        return [
             "focus_mode",
             "context_as_of_ts",
             "context_ttl_seconds",
             "task_count_cap",
             "tasks_remaining",
+            "minutes_cap",
+            "minutes_remaining",
         ]
-        for k in required:
-            if k not in ctx or ctx.get(k) is None:
-                reasons.append("context_missing_required_key:" + k)
 
-        if reasons:
-            return reasons
+    def proposal_required_keys(self) -> List[str]:
+        # planned_minutes is optional; tests include paths with and without it
+        return ["task_count", "now_ts"]
 
-        as_of = int(ctx["context_as_of_ts"])
-        ttl = int(ctx["context_ttl_seconds"])
-        age = now_ts - as_of
-        if age > ttl:
-            reasons.append("context_stale_ttl_exceeded")
+    def _missing_context_key(self, ctx: Dict[str, Any]) -> Optional[str]:
+        for k in self.context_keys_consumed():
+            if k not in ctx:
+                return k
+        return None
 
-        return reasons
+    def _missing_proposal_key(self, proposal: Dict[str, Any]) -> Optional[str]:
+        for k in self.proposal_required_keys():
+            if k not in proposal:
+                return k
+        return None
 
-    def _validate_proposal(self, proposal: Dict[str, Any]) -> List[str]:
-        reasons: List[str] = []
+    def _is_stale(self, ctx: Dict[str, Any], now_ts: Any) -> bool:
+        try:
+            age = float(now_ts) - float(ctx["context_as_of_ts"])
+            ttl = float(ctx["context_ttl_seconds"])
+        except Exception:
+            return True
+        return age > ttl
 
-        for k in self.PROPOSAL_REQUIRED_KEYS:
-            if k not in proposal or proposal.get(k) is None:
-                reasons.append("proposal_missing_required_key:" + k)
+    def decide_proposal(self, context: Dict[str, Any], proposal: Dict[str, Any]) -> HatOutcome:
+        fp = stable_fingerprint(proposal)
 
-        # Planned minutes is optional, but if present must be numeric-ish
+        mk = self._missing_context_key(context)
+        if mk is not None:
+            return HatOutcome(
+                hat_name=self.name,
+                stage="PROPOSE",
+                decision=HatDecision.REFUSE,
+                reasons=[self.REASON_CTX_MISSING_PREFIX + mk],
+                consumed_context_keys=self.context_keys_consumed(),
+                proposal_fingerprint=fp,
+            )
+
+        pk = self._missing_proposal_key(proposal)
+        if pk is not None:
+            return HatOutcome(
+                hat_name=self.name,
+                stage="PROPOSE",
+                decision=HatDecision.REFUSE,
+                reasons=[self.REASON_PROP_MISSING_PREFIX + pk],
+                consumed_context_keys=self.context_keys_consumed(),
+                proposal_fingerprint=fp,
+            )
+
+        if self._is_stale(context, proposal.get("now_ts")):
+            return HatOutcome(
+                hat_name=self.name,
+                stage="PROPOSE",
+                decision=HatDecision.REFUSE,
+                reasons=[self.REASON_CTX_STALE],
+                consumed_context_keys=self.context_keys_consumed(),
+                proposal_fingerprint=fp,
+            )
+
+        # Task cap enforcement
+        try:
+            task_count = int(proposal.get("task_count"))
+            cap = int(context.get("task_count_cap"))
+            remaining = int(context.get("tasks_remaining"))
+        except Exception:
+            # Fail closed if typing is bad
+            return HatOutcome(
+                hat_name=self.name,
+                stage="PROPOSE",
+                decision=HatDecision.REFUSE,
+                reasons=[self.REASON_TASK_EXCEEDS_CAP],
+                consumed_context_keys=self.context_keys_consumed(),
+                proposal_fingerprint=fp,
+            )
+
+        if task_count > cap or task_count > remaining:
+            return HatOutcome(
+                hat_name=self.name,
+                stage="PROPOSE",
+                decision=HatDecision.REFUSE,
+                reasons=[self.REASON_TASK_EXCEEDS_CAP],
+                consumed_context_keys=self.context_keys_consumed(),
+                proposal_fingerprint=fp,
+            )
+
+        # Minutes enforcement (optional)
         if "planned_minutes" in proposal and proposal.get("planned_minutes") is not None:
             try:
-                float(proposal["planned_minutes"])
+                planned = int(proposal.get("planned_minutes"))
+                mcap = int(context.get("minutes_cap"))
+                mrem = int(context.get("minutes_remaining"))
             except Exception:
-                reasons.append("proposal_invalid_number:planned_minutes")
-
-        # task_count must be numeric-ish
-        if "task_count" in proposal and proposal.get("task_count") is not None:
-            try:
-                float(proposal["task_count"])
-            except Exception:
-                reasons.append("proposal_invalid_number:task_count")
-
-        return reasons
-
-    def decide_proposal(self, ctx: Dict[str, Any], proposal: Dict[str, Any]) -> HatOutcome:
-        now_ts = int(proposal.get("now_ts", ctx.get("context_as_of_ts", 0)))
-
-        ctx_reasons = self._validate_context(ctx, now_ts)
-        if ctx_reasons:
-            fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
-            return HatOutcome(
-                decision=HatDecision.REFUSE,
-                reasons=ctx_reasons,
-                consumed_context_keys=self.consumed_context_keys(),
-                proposal_fingerprint=fp,
-                hat=self.NAME,
-                stage="PROPOSE",
-            )
-
-        prop_reasons = self._validate_proposal(proposal)
-        if prop_reasons:
-            fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
-            return HatOutcome(
-                decision=HatDecision.REFUSE,
-                reasons=prop_reasons,
-                consumed_context_keys=self.consumed_context_keys(),
-                proposal_fingerprint=fp,
-                hat=self.NAME,
-                stage="PROPOSE",
-            )
-
-        # Enforce caps
-        task_count = float(proposal["task_count"])
-        task_cap = float(ctx["task_count_cap"])
-        tasks_remaining = float(ctx["tasks_remaining"])
-
-        if tasks_remaining <= 0:
-            fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
-            return HatOutcome(
-                decision=HatDecision.REFUSE,
-                reasons=["focus_no_tasks_remaining"],
-                consumed_context_keys=self.consumed_context_keys(),
-                proposal_fingerprint=fp,
-                hat=self.NAME,
-                stage="PROPOSE",
-            )
-
-        if task_count > task_cap:
-            fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
-            return HatOutcome(
-                decision=HatDecision.REFUSE,
-                reasons=["focus_task_count_exceeds_cap"],
-                consumed_context_keys=self.consumed_context_keys(),
-                proposal_fingerprint=fp,
-                hat=self.NAME,
-                stage="PROPOSE",
-            )
-
-        if task_count > tasks_remaining:
-            fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
-            return HatOutcome(
-                decision=HatDecision.REFUSE,
-                reasons=["focus_task_count_exceeds_remaining"],
-                consumed_context_keys=self.consumed_context_keys(),
-                proposal_fingerprint=fp,
-                hat=self.NAME,
-                stage="PROPOSE",
-            )
-
-        if "planned_minutes" in proposal and proposal.get("planned_minutes") is not None:
-            if "minutes_cap" not in ctx or ctx.get("minutes_cap") is None:
-                fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
                 return HatOutcome(
-                    decision=HatDecision.REFUSE,
-                    reasons=["context_missing_required_key:minutes_cap"],
-                    consumed_context_keys=self.consumed_context_keys(),
-                    proposal_fingerprint=fp,
-                    hat=self.NAME,
+                    hat_name=self.name,
                     stage="PROPOSE",
-                )
-            if "minutes_remaining" not in ctx or ctx.get("minutes_remaining") is None:
-                fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
-                return HatOutcome(
                     decision=HatDecision.REFUSE,
-                    reasons=["context_missing_required_key:minutes_remaining"],
-                    consumed_context_keys=self.consumed_context_keys(),
+                    reasons=[self.REASON_MINUTES_EXCEEDS_CAP],
+                    consumed_context_keys=self.context_keys_consumed(),
                     proposal_fingerprint=fp,
-                    hat=self.NAME,
-                    stage="PROPOSE",
                 )
 
-            planned = float(proposal["planned_minutes"])
-            cap = float(ctx["minutes_cap"])
-            remaining = float(ctx["minutes_remaining"])
-
-            if planned > cap:
-                fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
+            if planned > mcap:
                 return HatOutcome(
-                    decision=HatDecision.REFUSE,
-                    reasons=["focus_planned_minutes_exceeds_cap"],
-                    consumed_context_keys=self.consumed_context_keys(),
-                    proposal_fingerprint=fp,
-                    hat=self.NAME,
+                    hat_name=self.name,
                     stage="PROPOSE",
+                    decision=HatDecision.REFUSE,
+                    reasons=[self.REASON_MINUTES_EXCEEDS_CAP],
+                    consumed_context_keys=self.context_keys_consumed(),
+                    proposal_fingerprint=fp,
                 )
 
-            if planned > remaining:
-                fp = _stable_fingerprint({"stage": "PROPOSE", "ctx": ctx, "proposal": proposal})
+            if planned > mrem:
                 return HatOutcome(
-                    decision=HatDecision.REFUSE,
-                    reasons=["focus_planned_minutes_exceeds_remaining"],
-                    consumed_context_keys=self.consumed_context_keys(),
-                    proposal_fingerprint=fp,
-                    hat=self.NAME,
+                    hat_name=self.name,
                     stage="PROPOSE",
+                    decision=HatDecision.REFUSE,
+                    reasons=[self.REASON_MINUTES_EXCEEDS_REMAINING],
+                    consumed_context_keys=self.context_keys_consumed(),
+                    proposal_fingerprint=fp,
                 )
 
-        fp_ok = _stable_fingerprint({"stage": "PROPOSE_OK", "ctx": ctx, "proposal": proposal})
+        # Happy path
         return HatOutcome(
+            hat_name=self.name,
+            stage="PROPOSE",
             decision=HatDecision.ALLOW,
             reasons=[],
-            consumed_context_keys=self.consumed_context_keys(),
-            proposal_fingerprint=fp_ok,
-            hat=self.NAME,
-            stage="PROPOSE",
+            consumed_context_keys=self.context_keys_consumed(),
+            proposal_fingerprint=fp,
         )
 
-    def decide_commit(self, ctx: Dict[str, Any], proposed: Dict[str, Any], commit: Dict[str, Any]) -> HatOutcome:
-        now_ts = int(commit.get("now_ts", proposed.get("now_ts", ctx.get("context_as_of_ts", 0))))
-
-        ctx_reasons = self._validate_context(ctx, now_ts)
-        if ctx_reasons:
-            fp = _stable_fingerprint({"stage": "COMMIT", "ctx": ctx, "proposed": proposed, "commit": commit})
+    def decide_commit(
+        self,
+        context: Dict[str, Any],
+        proposed_proposal: Dict[str, Any],
+        commit_proposal: Dict[str, Any],
+    ) -> HatOutcome:
+        # First, ensure the originally proposed payload is still admissible.
+        # (Commit gating is about drift, not re-optimizing.)
+        proposed_out = self.decide_proposal(context, proposed_proposal)
+        if proposed_out.decision != HatDecision.ALLOW:
             return HatOutcome(
+                hat_name=self.name,
+                stage="COMMIT",
                 decision=HatDecision.REFUSE,
-                reasons=ctx_reasons,
-                consumed_context_keys=self.consumed_context_keys(),
-                proposal_fingerprint=fp,
-                hat=self.NAME,
-                stage="COMMIT",
+                reasons=list(proposed_out.reasons),
+                consumed_context_keys=self.context_keys_consumed(),
+                proposal_fingerprint=stable_fingerprint(commit_proposal),
             )
 
-        drift: List[str] = []
-        protected = ["task_count", "planned_minutes"]
+        # Drift detection (ignore now_ts drift; allow clock movement)
+        drift_fields = ["task_count", "planned_minutes"]
+        for k in drift_fields:
+            if commit_proposal.get(k) != proposed_proposal.get(k):
+                return HatOutcome(
+                    hat_name=self.name,
+                    stage="COMMIT",
+                    decision=HatDecision.REQUIRE_RECOMMIT,
+                    reasons=[self.REASON_RECOMMIT_PREFIX + str(k)],
+                    consumed_context_keys=self.context_keys_consumed(),
+                    proposal_fingerprint=stable_fingerprint(commit_proposal),
+                )
 
-        for k in protected:
-            a = proposed.get(k, None)
-            b = commit.get(k, None)
-            # Only compare planned_minutes if it existed in proposed
-            if k == "planned_minutes" and a is None:
-                continue
-            if a != b:
-                drift.append(k)
-
-        if drift:
-            fp = _stable_fingerprint({"stage": "COMMIT_DRIFT", "ctx": ctx, "proposed": proposed, "commit": commit})
-            return HatOutcome(
-                decision=HatDecision.REQUIRE_RECOMMIT,
-                reasons=["proposal_drift_requires_recommit:" + ",".join(drift)],
-                consumed_context_keys=self.consumed_context_keys(),
-                proposal_fingerprint=fp,
-                hat=self.NAME,
-                stage="COMMIT",
-            )
-
-        # Validate commit as a proposal (fail-closed)
-        prop_reasons = self._validate_proposal(commit)
-        if prop_reasons:
-            fp = _stable_fingerprint({"stage": "COMMIT_INVALID", "ctx": ctx, "commit": commit})
-            return HatOutcome(
-                decision=HatDecision.REFUSE,
-                reasons=prop_reasons,
-                consumed_context_keys=self.consumed_context_keys(),
-                proposal_fingerprint=fp,
-                hat=self.NAME,
-                stage="COMMIT",
-            )
-
-        fp_ok = _stable_fingerprint({"stage": "COMMIT_OK", "ctx": ctx, "proposed": proposed, "commit": commit})
+        # If commit equals proposed (for drift fields) and constraints were ok, allow.
         return HatOutcome(
+            hat_name=self.name,
+            stage="COMMIT",
             decision=HatDecision.ALLOW,
             reasons=[],
-            consumed_context_keys=self.consumed_context_keys(),
-            proposal_fingerprint=fp_ok,
-            hat=self.NAME,
-            stage="COMMIT",
+            consumed_context_keys=self.context_keys_consumed(),
+            proposal_fingerprint=stable_fingerprint(commit_proposal),
         )
