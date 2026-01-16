@@ -1,3 +1,7 @@
+**Document Type:** Reference Library  
+**Required for Evaluation:** No  
+**Primary Evaluator Path:** `docs/START_HERE.md`
+
 # Platform Assistants Lens v1 (Apple/Meta-neutral)
 
 Status: Draft v1

@@ -1,3 +1,7 @@
+**Document Type:** Reference Library  
+**Required for Evaluation:** No  
+**Primary Evaluator Path:** `docs/START_HERE.md`
+
 # Reflection Hat v1 — Governance Specification (Day-Side, Non-Executing)
 
 Status

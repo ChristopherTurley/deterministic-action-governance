@@ -37,3 +37,10 @@ Generated artifacts must not be committed:
 - `__pycache__/`
 - `*.pyc`
 - local OS noise files
+
+## Ignored generated artifacts
+These artifacts are local-only and should not be treated as repo surfaces:
+- `__pycache__/`
+- `*.pyc`
+- `.pytest_cache/`
+

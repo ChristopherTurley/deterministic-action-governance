@@ -1,3 +1,7 @@
+**Document Type:** Reference Library  
+**Required for Evaluation:** No  
+**Primary Evaluator Path:** `docs/START_HERE.md`
+
 # Healthcare Hat v1 — Governance Specification
 
 Status: Draft v1

@@ -1,3 +1,7 @@
+**Document Type:** Reference Library  
+**Required for Evaluation:** No  
+**Primary Evaluator Path:** `docs/START_HERE.md`
+
 # Executive Hat v1 (CEO/CFO/CPO) — Governance Specification
 
 Status: Draft v1

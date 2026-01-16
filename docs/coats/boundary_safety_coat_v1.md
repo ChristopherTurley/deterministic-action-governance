@@ -1,3 +1,7 @@
+**Document Type:** Reference Library  
+**Required for Evaluation:** No  
+**Primary Evaluator Path:** `docs/START_HERE.md`
+
 # Boundary / Safety Coat v1 — Explanation Specification (Non-Decisional)
 
 Status

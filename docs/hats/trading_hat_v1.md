@@ -1,3 +1,7 @@
+**Document Type:** Reference Library  
+**Required for Evaluation:** No  
+**Primary Evaluator Path:** `docs/START_HERE.md`
+
 # Trading Hat v1 — Governance Specification (Canonical Hat Template)
 
 Status: Draft v1 (Hat spec)
