@@ -22,6 +22,8 @@ def route_proposal(hat_name: str, ctx: Dict[str, Any], proposal: Dict[str, Any])
 
     out = hat.decide_proposal(ctx, proposal)
     e = out.to_ledger_event()
+    if e.get("stage") is None:
+        e["stage"] = "PROPOSE"
     return e
 
 
@@ -41,4 +43,6 @@ def route_commit(hat_name: str, ctx: Dict[str, Any], proposed: Dict[str, Any], c
 
     out = hat.decide_commit(ctx, proposed, commit)
     e = out.to_ledger_event()
+    if e.get("stage") is None:
+        e["stage"] = "COMMIT"
     return e

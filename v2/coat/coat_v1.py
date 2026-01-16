@@ -53,3 +53,43 @@ def render_hat_event(event: Dict[str, Any]) -> Dict[str, Any]:
         "hat": hat,
         "stage": stage,
     }
+
+# --- Canonical string rendering (LOCKED SURFACE) ---
+# Demos expect a stable, human-readable "coat_display" string.
+# This does NOT change decision semantics; it only formats an already-rendered dict.
+
+def _stable_lines_from_rendered(rendered: Dict[str, Any], event: Dict[str, Any]) -> str:
+    # Deterministic ordering: fixed field order + sorted reasons
+    typ = rendered.get("type") or event.get("type", "")
+    hat = rendered.get("hat", "")
+    stage = rendered.get("stage") or event.get("stage", "")
+    decision = rendered.get("decision", "")
+    reasons = rendered.get("reasons", []) or []
+    try:
+        reasons = sorted([str(r) for r in reasons])
+    except Exception:
+        reasons = [str(r) for r in reasons]
+
+    lines = []
+    lines.append(f"type: {typ}")
+    lines.append(f"hat: {hat}")
+    if stage:
+        lines.append(f"stage: {stage}")
+    lines.append(f"decision: {decision}")
+    if reasons:
+        lines.append("reasons:")
+        for r in reasons:
+            lines.append(f" - {r}")
+    return "\n".join(lines)
+
+def render_decision_v1(event: Dict[str, Any]) -> str:
+    """
+    Canonical coat entrypoint for demos.
+    Returns stable, audit-legible, human-readable output.
+    """
+    rendered = render_hat_event(event)
+    return _stable_lines_from_rendered(rendered, event)
+
+# --- Canonical coat string rendering (LOCKED SURFACE) ---
+# Demos expect a stable, human-readable string. This does not change any decision semantics.
+
