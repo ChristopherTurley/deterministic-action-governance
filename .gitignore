@@ -40,3 +40,13 @@ v2/demo/hat_session_ledger.json
 # Allow GitHub metadata (templates, policies)
 !.github/
 !.github/**
+
+# --- local OS / editor junk ---
+
+# --- python caches ---
+.pytest_cache/
+
+# --- local build / evaluator artifacts ---
+artifacts/
+*.tgz
+*.sha256
