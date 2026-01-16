@@ -21,9 +21,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install pytest
 
       - name: Run tests
-        run: |
-      - name: Install test deps
-        run: python3 -m pip install --upgrade pip pytest
-          pytest -q
+        run: pytest -q
