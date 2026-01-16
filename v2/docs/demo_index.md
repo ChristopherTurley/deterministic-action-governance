@@ -101,3 +101,18 @@ They exist to prove:
 Run:
 - `v2/demo/scripts/demo_domain_hats_fail_closed_v1.sh`
 
+
+---
+
+## Universal Governance Demo v1 (Trading + Focus + Unknown + Coat)
+
+Single deterministic harness proving:
+- explicit hat selection
+- proposal vs commit separation
+- drift -> REQUIRE_RECOMMIT
+- unknown hat -> fail-closed + known_hats list
+- coat rendering (non-interfering)
+
+Run:
+- `v2/demo/scripts/demo_universal_governance_demo_v1.sh`
+

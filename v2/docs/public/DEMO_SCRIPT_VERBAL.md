@@ -89,3 +89,18 @@ Expected:
 - Decisions are REFUSE or REQUIRE_RECOMMIT
 - Reasons start with the correct INV_* namespace (e.g., INV_OPS_, INV_HEALTH_)
 
+
+## 8) Universal governance harness (all surfaces in one run)
+You say:
+- “This is the single proof harness: two known hats + unknown hat + coat rendering.”
+- “It proves proposal/commit separation, drift gating, and deterministic refusals.”
+- “If this drifts, tests fail. No autonomy is possible.”
+
+Run:
+- `v2/demo/scripts/demo_universal_governance_demo_v1.sh`
+
+Expected:
+- Trading + Focus show ALLOW/ALLOW then drift -> REQUIRE_RECOMMIT
+- Unknown hat -> REFUSE with known_hats listed
+- Coat display is stable and audit-legible
+
