@@ -87,3 +87,9 @@ The gap is a missing, standardized governance envelope:
 - explanation non-interference
 
 VERA is a reference artifact that demonstrates these primitives as testable guarantees.
+
+────────────────────────
+You are on the Evaluator Track
+
+Next: v2/docs/demo_index.md
+Return to start: docs/START_HERE.md

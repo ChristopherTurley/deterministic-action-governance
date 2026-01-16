@@ -104,3 +104,8 @@ Expected:
 - Unknown hat -> REFUSE with known_hats listed
 - Coat display is stable and audit-legible
 
+────────────────────────
+You are on the Evaluator Track
+
+Next: DONE
+Return to start: docs/START_HERE.md

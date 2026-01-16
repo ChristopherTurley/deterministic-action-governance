@@ -16,3 +16,9 @@ v2/demo/scripts/run_quick_proof.sh
 - Quick Proof: `v2/demo/scripts/run_quick_proof.sh`
 - Investor 5-min: `v2/demo/scripts/run_investor_5min.sh`
 - Apple Gap 5-min: `v2/demo/scripts/run_apple_gap_5min.sh`
+
+────────────────────────
+You are on the Evaluator Track
+
+Next: v2/docs/public/DEMO_SCRIPT_VERBAL.md
+Return to start: docs/START_HERE.md

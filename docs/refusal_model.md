@@ -178,3 +178,9 @@ Refusal messages must be legible and consistent. The system may vary tone, but m
 Status: Month 11 — Refusal Taxonomy v1
 Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review
+
+────────────────────────
+You are on the Evaluator Track
+
+Next: docs/platform_gaps/APPLE_GAP_MAP_v2.md
+Return to start: docs/START_HERE.md

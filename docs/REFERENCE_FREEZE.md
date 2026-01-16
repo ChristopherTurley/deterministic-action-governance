@@ -57,3 +57,9 @@ If There Is Ever Doubt
 - Assume less capability is safer.
 
 This document is itself frozen.
+
+────────────────────────
+You are on the Evaluator Track
+
+Next: docs/invariants.md
+Return to start: docs/START_HERE.md

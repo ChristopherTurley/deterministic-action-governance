@@ -1,3 +1,23 @@
+# START HERE — Evaluator Track
+
+This is the **canonical** evaluator path. It is intentionally linear.
+
+## Lane A — Evaluator Track (7 files)
+1) `docs/START_HERE.md`
+2) `docs/REFERENCE_FREEZE.md`
+3) `docs/invariants.md`
+4) `docs/refusal_model.md`
+5) `docs/platform_gaps/APPLE_GAP_MAP_v2.md`
+6) `v2/docs/demo_index.md`
+7) `v2/docs/public/DEMO_SCRIPT_VERBAL.md`
+
+## What to run
+- `pytest -q`
+
+## Canonical demo entry
+- `v2/docs/demo_index.md`
+
+
 # VERA — Start Here (Required Onramp)
 
 VERA is a **deterministic execution governance layer**, not an assistant.
@@ -66,3 +86,9 @@ They do not change VERA’s authority model:
 ## What VERA Will Not Do
 
 See: `docs/vera_will_never.md` (this is the hard boundary).
+
+────────────────────────
+You are on the Evaluator Track
+
+Next: docs/REFERENCE_FREEZE.md
+Return to start: docs/START_HERE.md

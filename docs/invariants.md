@@ -54,3 +54,9 @@ If any of the following occur, the artifact is invalid:
 Status: Month 11 — Semantic Hardening
 Change policy: clarification-only changes allowed; no power expansion without invariant revision
 Review expectation: written to survive adversarial review
+
+────────────────────────
+You are on the Evaluator Track
+
+Next: docs/refusal_model.md
+Return to start: docs/START_HERE.md
