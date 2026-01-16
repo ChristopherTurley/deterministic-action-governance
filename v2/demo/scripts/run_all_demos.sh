@@ -12,6 +12,9 @@ echo ""
 echo "=== 0) TEST SUITE (must be green) ==="
 pytest -q
 echo ""
+echo "=== 0a) UNIVERSAL GOVERNANCE DEMO v1 (trading+focus+unknown+coat) ==="
+v2/demo/scripts/demo_universal_governance_demo_v1.sh
+echo ""
 
 echo "=== 1) WEEK 2 TRADING HAT HARNESS (3 scenarios) ==="
 ./demo_trading_hat_v1.sh
@@ -26,20 +29,24 @@ PYTHONPATH=. python3 v2/demo/trading_live_spoken_demo.py
 echo ""
 
 echo "=== 4) FOCUS HAT DEMO (second hat) ==="
-echo "=== 4a) FOCUS SPOKEN DEMO (opt-in voice, v1 untouched) ==="
-PYTHONPATH=. python3 v2/demo/focus_live_spoken_demo.py
-echo ""
-
+echo "=== 4a) FOCUS TYPED HARNESS ==="
 if [ -x v2/demo/scripts/demo_focus_hat_v1.sh ]; then
   v2/demo/scripts/demo_focus_hat_v1.sh
 else
   echo "MISSING: v2/demo/scripts/demo_focus_hat_v1.sh"
 fi
 echo ""
+echo "=== 4b) FOCUS SPOKEN DEMO (opt-in voice, v1 untouched) ==="
+PYTHONPATH=. python3 v2/demo/focus_live_spoken_demo.py
+echo ""
 
 echo "=== 5) MULTI-HAT ROUTER v1 DEMO (explicit selection only) ==="
 v2/demo/scripts/demo_multi_hat_router_v1.sh
 echo ""
+echo "=== 5b) DOMAIN HATS v1 (fail-closed surface proof) ==="
+v2/demo/scripts/demo_domain_hats_fail_closed_v1.sh
+echo ""
+
 
 echo "=== 6) COAT v1 DEMO (stable reason->message templates) ==="
 v2/demo/scripts/demo_coat_v1.sh

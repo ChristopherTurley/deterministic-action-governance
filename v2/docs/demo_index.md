@@ -116,3 +116,17 @@ Single deterministic harness proving:
 Run:
 - `v2/demo/scripts/demo_universal_governance_demo_v1.sh`
 
+
+---
+
+## Audience-mode runners (locked)
+
+Quick proof (tests + universal + domain hats):
+- `v2/demo/scripts/run_quick_proof.sh`
+
+Investor 5-minute (tests + universal + trading + focus + coat):
+- `v2/demo/scripts/run_investor_5min.sh`
+
+Apple gap 5-minute (tests + universal + router + domain hats + coat):
+- `v2/demo/scripts/run_apple_gap_5min.sh`
+
