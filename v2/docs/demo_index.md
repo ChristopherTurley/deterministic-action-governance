@@ -86,3 +86,18 @@ Run Focus (drift -> REQUIRE_RECOMMIT):
 
 Docs:
 - `v2/docs/bridge_v1.md`
+
+---
+
+## Domain Hats v1 (Fail-Closed Surface Proof)
+
+These hats are intentionally non-executing stubs.
+They exist to prove:
+- naming + registration is canonical
+- routing works by explicit selection
+- outcomes fail closed deterministically
+- reasons remain namespaced (INV_*)
+
+Run:
+- `v2/demo/scripts/demo_domain_hats_fail_closed_v1.sh`
+

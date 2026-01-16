@@ -74,3 +74,18 @@ Expected:
 You say:
 - “This is Execution Intelligence without autonomy.”
 - “The governance contract is what makes it safe, audit-ready, and reproducible.”
+
+## 7) Domain hats surface proof (fail-closed, namespaced reasons)
+You say:
+- “These hats exist as governance lenses, but they do not execute.”
+- “They’re intentionally stubbed — refusal is the correct outcome.”
+- “The point is proving the surface is routable and audit-legible.”
+
+Run:
+- `v2/demo/scripts/demo_domain_hats_fail_closed_v1.sh`
+
+Expected:
+- Each domain hat routes by name
+- Decisions are REFUSE or REQUIRE_RECOMMIT
+- Reasons start with the correct INV_* namespace (e.g., INV_OPS_, INV_HEALTH_)
+
