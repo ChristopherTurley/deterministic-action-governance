@@ -109,3 +109,7 @@ VERA_v2_QUICK_PROOF_LOCKED_SURFACES_GREEN_20260115
 ---
 
 End of document.
+
+## Platform gap notes
+- docs/platform_gaps/APPLE_EXECUTION_GAP.md
+- docs/platform_gaps/APPLE_GAP_MAP_v1.md
