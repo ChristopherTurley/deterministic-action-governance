@@ -63,3 +63,33 @@ vera_private_runner/
 vera_private_runner_NDA/
 data/
 *.log
+
+# Generated bundles and artifacts
+v2/nda/trading_gate_pack_v1/dist/
+*.zip
+
+# Local secrets and token caches
+.env
+.env.*
+**/*token*
+**/spotify_tokens.json
+**/.vera/
+**/__pycache__/
+**/*.pyc
+
+# Secrets and credentials (files, not docs)
+**/*secret.key
+**/*secret.json
+**/*secret.txt
+**/*_secret.*
+**/*.env
+**/*.env.*
+**/*token*
+**/*api_key*
+**/*apikey*
+**/*credentials*
+**/spotify_tokens.json
+**/.vera/
+
+# Explicitly allow security policy documentation
+!SECURITY.md
