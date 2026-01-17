@@ -1,0 +1,24 @@
+name: device-b-zip
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Device B zip
+        shell: bash
+        run: |
+          cd v2/nda/trading_gate_pack_v1
+          mkdir -p dist
+          zip -r -X dist/trading_gate_pack_v1_device_b.zip VERSION README_NDA.md TRADING_PRECHECK_RUNBOOK.md policy schema reference scripts tools
+          sha256sum dist/trading_gate_pack_v1_device_b.zip > dist/SHA256SUMS.txt
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trading_gate_pack_v1_device_b
+          path: v2/nda/trading_gate_pack_v1/dist
+
