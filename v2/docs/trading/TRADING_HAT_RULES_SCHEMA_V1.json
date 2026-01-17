@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vera://schemas/trading_hat_rules_v1.json",
+  "title": "VERA Trading Hat Rules v1 (Governance-Only Contract)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "mode", "enforcement", "risk", "session", "cooldowns", "psychology"],
+  "properties": {
+    "version": { "type": "string", "const": "trading_hat_rules_v1" },
+    "mode": { "type": "string", "enum": ["demo", "operator"] },
+
+    "enforcement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fail_closed", "no_execution_authority", "require_explicit_commit"],
+      "properties": {
+        "fail_closed": { "type": "boolean", "const": true },
+        "no_execution_authority": { "type": "boolean", "const": true },
+        "require_explicit_commit": { "type": "boolean", "const": true }
+      }
+    },
+
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "max_daily_loss", "max_trade_risk", "max_trades_per_day"],
+      "properties": {
+        "currency": { "type": "string", "enum": ["USD"] },
+        "max_daily_loss": { "type": "number", "exclusiveMinimum": 0 },
+        "max_trade_risk": { "type": "number", "exclusiveMinimum": 0 },
+        "max_trades_per_day": { "type": "integer", "minimum": 0 },
+
+        "stop_win": { "type": "number", "exclusiveMinimum": 0 },
+        "stop_loss": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timezone", "allowed_windows"],
+      "properties": {
+        "timezone": { "type": "string", "minLength": 1 },
+        "allowed_windows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["days", "start_hhmm", "end_hhmm"],
+            "properties": {
+              "days": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "enum": ["Mon", "Tue", "Wed", "Thu", "Fri"] }
+              },
+              "start_hhmm": { "type": "string", "pattern": "^[0-2][0-9][0-5][0-9]$" },
+              "end_hhmm": { "type": "string", "pattern": "^[0-2][0-9][0-5][0-9]$" }
+            }
+          }
+        }
+      }
+    },
+
+    "cooldowns": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seconds_after_loss", "seconds_after_win", "seconds_after_refusal"],
+      "properties": {
+        "seconds_after_loss": { "type": "integer", "minimum": 0 },
+        "seconds_after_win": { "type": "integer", "minimum": 0 },
+        "seconds_after_refusal": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "psychology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["block_on_urgency", "block_on_revenge", "max_reentry_attempts"],
+      "properties": {
+        "block_on_urgency": { "type": "boolean" },
+        "block_on_revenge": { "type": "boolean" },
+        "max_reentry_attempts": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
