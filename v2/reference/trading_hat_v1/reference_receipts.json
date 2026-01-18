@@ -1,0 +1,77 @@
+{
+  "hat_id": "TRADING_HAT_V1",
+  "receipts": [
+    {
+      "name": "intraday_leveraged_options",
+      "receipt": {
+        "decision_fingerprint": "74895d41dd222f19e7e5811b5c58a94c91dd338dcc20053781f6254c38064c01",
+        "decision_type": "REFUSE",
+        "hat_id": "TRADING_HAT_V1",
+        "input_fingerprint": "7e54494e97e1c743a11f1bd90c8457b5b32d6d2ee390cc60f4e21fbee89bfc0d",
+        "logical_time_index": 1,
+        "reason_code": "EXCESSIVE_RISK_CLASS",
+        "rule_id": "TRD-R-001"
+      }
+    },
+    {
+      "name": "undefined_strategy",
+      "receipt": {
+        "decision_fingerprint": "126c2480cbae82087e6d1c2cf31015c233db99ecd3205a7f64e1fab63c9fd2d8",
+        "decision_type": "REFUSE",
+        "hat_id": "TRADING_HAT_V1",
+        "input_fingerprint": "790edc925c5abb36f3246676406fbd7d1353252f21fcd48c04cb2a17d767d6d6",
+        "logical_time_index": 2,
+        "reason_code": "UNCLASSIFIED_STRATEGY",
+        "rule_id": "TRD-R-002"
+      }
+    },
+    {
+      "name": "experimental_context",
+      "receipt": {
+        "decision_fingerprint": "17f54be78334b9b649d1e6c89ad06fed62fed7d73f37c28c8a8f4c173ae88151",
+        "decision_type": "NO-OP",
+        "hat_id": "TRADING_HAT_V1",
+        "input_fingerprint": "77999d09895b5c661063ab8ad2ac7dc0e517462513a17766bb931c4fad3a27f5",
+        "logical_time_index": 3,
+        "reason_code": "CONTEXT_NOT_GOVERNABLE",
+        "rule_id": "TRD-R-003"
+      }
+    },
+    {
+      "name": "out_of_scope_instrument",
+      "receipt": {
+        "decision_fingerprint": "92c0ab7a037fadac5f3a459bb8a2846088d3fee8a0f9d5e03a885511d23676fa",
+        "decision_type": "REFUSE",
+        "hat_id": "TRADING_HAT_V1",
+        "input_fingerprint": "839f2de007ebe563274bcd55cfd58d72599b177cb4063b314c1d169b054cbe99",
+        "logical_time_index": 4,
+        "reason_code": "OUT_OF_SCOPE_INSTRUMENT",
+        "rule_id": "TRD-R-004"
+      }
+    },
+    {
+      "name": "baseline_permitted_case",
+      "receipt": {
+        "decision_fingerprint": "638aa821a54da51d4bbee1d2c256ac5798d77794e80a1362895d2e7a017bbe19",
+        "decision_type": "ALLOW",
+        "hat_id": "TRADING_HAT_V1",
+        "input_fingerprint": "bc1da2941cea855739d2ee03cf66dc678b1ab082148e4f97edcfe2706e4a004b",
+        "logical_time_index": 5,
+        "reason_code": "BASELINE_PERMITTED_CASE",
+        "rule_id": "TRD-R-005"
+      }
+    },
+    {
+      "name": "malformed_input",
+      "receipt": {
+        "decision_fingerprint": "1d5b0bdbbb5bbc6a9151cf70dfb85258b98fa19b9baa9f37d3db15dad19aa5a0",
+        "decision_type": "REFUSE",
+        "hat_id": "TRADING_HAT_V1",
+        "input_fingerprint": "a3fd6ed12b8a7f2b3e2ca04eea9b1ba45c1606d09b880486cd933145d65f7c36",
+        "logical_time_index": 6,
+        "reason_code": "MALFORMED_INPUT",
+        "rule_id": "TRD-R-000"
+      }
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "hat_id": "TRADING_HAT_V1",
+  "scenarios": [
+    {
+      "expect": {
+        "decision_type": "REFUSE",
+        "reason_code": "EXCESSIVE_RISK_CLASS",
+        "rule_id": "TRD-R-001"
+      },
+      "input": {
+        "instrument_type": "option",
+        "leverage_flag": true,
+        "operator_declared_context": "standard",
+        "risk_class": "high",
+        "strategy_class": "defined_strategy",
+        "time_horizon": "intraday"
+      },
+      "logical_time_index": 1,
+      "name": "intraday_leveraged_options"
+    },
+    {
+      "expect": {
+        "decision_type": "REFUSE",
+        "reason_code": "UNCLASSIFIED_STRATEGY",
+        "rule_id": "TRD-R-002"
+      },
+      "input": {
+        "instrument_type": "equity",
+        "leverage_flag": false,
+        "operator_declared_context": "standard",
+        "risk_class": "medium",
+        "strategy_class": "undefined_strategy",
+        "time_horizon": "swing"
+      },
+      "logical_time_index": 2,
+      "name": "undefined_strategy"
+    },
+    {
+      "expect": {
+        "decision_type": "NO-OP",
+        "reason_code": "CONTEXT_NOT_GOVERNABLE",
+        "rule_id": "TRD-R-003"
+      },
+      "input": {
+        "instrument_type": "equity",
+        "leverage_flag": false,
+        "operator_declared_context": "experimental",
+        "risk_class": "low",
+        "strategy_class": "defined_strategy",
+        "time_horizon": "long_term"
+      },
+      "logical_time_index": 3,
+      "name": "experimental_context"
+    },
+    {
+      "expect": {
+        "decision_type": "REFUSE",
+        "reason_code": "OUT_OF_SCOPE_INSTRUMENT",
+        "rule_id": "TRD-R-004"
+      },
+      "input": {
+        "instrument_type": "other",
+        "leverage_flag": false,
+        "operator_declared_context": "standard",
+        "risk_class": "low",
+        "strategy_class": "defined_strategy",
+        "time_horizon": "long_term"
+      },
+      "logical_time_index": 4,
+      "name": "out_of_scope_instrument"
+    },
+    {
+      "expect": {
+        "decision_type": "ALLOW",
+        "reason_code": "BASELINE_PERMITTED_CASE",
+        "rule_id": "TRD-R-005"
+      },
+      "input": {
+        "instrument_type": "equity",
+        "leverage_flag": false,
+        "operator_declared_context": "standard",
+        "risk_class": "low",
+        "strategy_class": "defined_strategy",
+        "time_horizon": "long_term"
+      },
+      "logical_time_index": 5,
+      "name": "baseline_permitted_case"
+    },
+    {
+      "expect": {
+        "decision_type": "REFUSE",
+        "reason_code": "MALFORMED_INPUT",
+        "rule_id": "TRD-R-000"
+      },
+      "input": {
+        "instrument_type": "equity"
+      },
+      "logical_time_index": 6,
+      "name": "malformed_input"
+    }
+  ]
+}
