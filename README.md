@@ -26,3 +26,6 @@ Primary entry points:
 - Procurement memo: `v2/sales/PROCUREMENT_COVER_MEMO_V1.md`
 
 Acceptance is objective: Device-B verifier passes and replay matches reference receipts.
+
+Optional orientation for first-time evaluators:
+- v2/docs/public/EVALUATOR_COURTESY.md
