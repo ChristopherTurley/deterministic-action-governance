@@ -58,7 +58,7 @@ if snap.exists():
     candidates = []
     if isinstance(d, dict):
         # Try common keys + any key containing "member"
-        for k in ("bundle_members","members","hats","bundle","commercial_bundle","bundle_v1","bundle_items"):
+        for k in ("bundle_hats","bundle_members","members","hats","bundle","commercial_bundle","bundle_v1","bundle_items"):
             if k in d:
                 candidates.append(d.get(k))
         for k in d.keys():
