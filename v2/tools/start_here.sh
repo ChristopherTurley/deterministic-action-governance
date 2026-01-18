@@ -3,15 +3,18 @@ REPO="/Users/cp/ai_screen_assistant"
 cd "$REPO" || exit 1
 
 echo "============================================================"
+echo "============================================================"
 echo "VERA v2 — COMMERCIAL BUNDLE v1 (START HERE)"
-echo
-echo "REPO_HEAD:"
-git rev-parse --short HEAD 2>/dev/null || echo "UNKNOWN"
-echo
-echo "BUNDLE_LOCK:"
 echo "============================================================"
 echo
 
+echo "REPO_HEAD:"
+git rev-parse --short HEAD 2>/dev/null || echo "UNKNOWN"
+echo
+
+echo "BUNDLE_LOCK:"
+git tag --points-at HEAD | grep -m1 'VERA_v2_COMMERCIAL_BUNDLE' || git rev-parse --short HEAD
+echo
 git rev-parse --short HEAD 2>/dev/null || echo "UNKNOWN"
 echo
 
