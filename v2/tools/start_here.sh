@@ -73,6 +73,7 @@ echo " - v2/sales/PROCUREMENT_COVER_MEMO_V1.md"
 echo " - v2/legal/VERA_COMMERCIAL_BUNDLE_V1_LICENSE.md"
 echo " - v2/legal/PROCUREMENT_RIDER_ONE_PAGER.md"
 echo " - v2/legal/GARM_V1.md"
+echo " - v2/docs/public/EVALUATOR_COURTESY.md"
 echo
 echo "DONE: If steps 1–2 are green/OK, the artifact is procurement-ready."
 
