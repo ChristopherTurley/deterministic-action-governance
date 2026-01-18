@@ -83,3 +83,4 @@ v2/nda/trading_gate_pack_v1/dist/
 **/.vera/
 # Explicitly allow security policy documentation
 !SECURITY.md
+assistant/
