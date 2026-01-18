@@ -1,0 +1,169 @@
+{
+  "hat_id": "EXECUTIVE_HAT_V1",
+  "receipts": [
+    {
+      "commit": {
+        "commit_fingerprint": "9105b1e285c7e1e177054b8cc32fd19ff75df0cfb6bf77ebcc6971c33f6bcc03",
+        "consumed_context_keys": [
+          "role",
+          "approval_limit_usd",
+          "approvals_used_today",
+          "approval_count_cap",
+          "context_as_of_ts",
+          "context_ttl_seconds",
+          "policy_mode"
+        ],
+        "decision": "ALLOW",
+        "hat": "EXECUTIVE_HAT_V1",
+        "proposal_fingerprint": "9105b1e285c7e1e177054b8cc32fd19ff75df0cfb6bf77ebcc6971c33f6bcc03",
+        "reasons": [],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "A_allowed_propose_and_commit",
+      "propose": {
+        "consumed_context_keys": [
+          "role",
+          "approval_limit_usd",
+          "approvals_used_today",
+          "approval_count_cap",
+          "context_as_of_ts",
+          "context_ttl_seconds",
+          "policy_mode"
+        ],
+        "decision": "ALLOW",
+        "hat": "EXECUTIVE_HAT_V1",
+        "proposal_fingerprint": "9105b1e285c7e1e177054b8cc32fd19ff75df0cfb6bf77ebcc6971c33f6bcc03",
+        "reasons": [],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "366ed25d0e5777439b06b835d992ec79565d67596cd143e360e56a2a7722c202",
+        "consumed_context_keys": [
+          "role",
+          "approval_limit_usd",
+          "approvals_used_today",
+          "approval_count_cap",
+          "context_as_of_ts",
+          "context_ttl_seconds",
+          "policy_mode"
+        ],
+        "decision": "REFUSE",
+        "hat": "EXECUTIVE_HAT_V1",
+        "proposal_fingerprint": "366ed25d0e5777439b06b835d992ec79565d67596cd143e360e56a2a7722c202",
+        "reasons": [
+          "INV_EXEC_proposal_not_allowed",
+          "INV_EXEC_spend_exceeds_approval_limit"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "B_refuse_spend_limit",
+      "propose": {
+        "consumed_context_keys": [
+          "role",
+          "approval_limit_usd",
+          "approvals_used_today",
+          "approval_count_cap",
+          "context_as_of_ts",
+          "context_ttl_seconds",
+          "policy_mode"
+        ],
+        "decision": "REFUSE",
+        "hat": "EXECUTIVE_HAT_V1",
+        "proposal_fingerprint": "366ed25d0e5777439b06b835d992ec79565d67596cd143e360e56a2a7722c202",
+        "reasons": [
+          "INV_EXEC_spend_exceeds_approval_limit"
+        ],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "9e6161fbbf4703ecc0f4428a35edc7b74c246c281474b7339a3af3df006f8c4f",
+        "consumed_context_keys": [
+          "role",
+          "approval_limit_usd",
+          "approvals_used_today",
+          "approval_count_cap",
+          "context_as_of_ts",
+          "context_ttl_seconds",
+          "policy_mode"
+        ],
+        "decision": "REFUSE",
+        "hat": "EXECUTIVE_HAT_V1",
+        "proposal_fingerprint": "9e6161fbbf4703ecc0f4428a35edc7b74c246c281474b7339a3af3df006f8c4f",
+        "reasons": [
+          "INV_EXEC_proposal_not_allowed",
+          "INV_EXEC_external_sharing_blocked_for_sensitive_data"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "C_refuse_sensitive_external_share",
+      "propose": {
+        "consumed_context_keys": [
+          "role",
+          "approval_limit_usd",
+          "approvals_used_today",
+          "approval_count_cap",
+          "context_as_of_ts",
+          "context_ttl_seconds",
+          "policy_mode"
+        ],
+        "decision": "REFUSE",
+        "hat": "EXECUTIVE_HAT_V1",
+        "proposal_fingerprint": "9e6161fbbf4703ecc0f4428a35edc7b74c246c281474b7339a3af3df006f8c4f",
+        "reasons": [
+          "INV_EXEC_external_sharing_blocked_for_sensitive_data"
+        ],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "9ac80cb94e8cf646d34154ee1ccfd36db89ac120952d7083acda8907ffb087eb",
+        "consumed_context_keys": [
+          "role",
+          "approval_limit_usd",
+          "approvals_used_today",
+          "approval_count_cap",
+          "context_as_of_ts",
+          "context_ttl_seconds",
+          "policy_mode"
+        ],
+        "decision": "REQUIRE_RECOMMIT",
+        "hat": "EXECUTIVE_HAT_V1",
+        "proposal_fingerprint": "9105b1e285c7e1e177054b8cc32fd19ff75df0cfb6bf77ebcc6971c33f6bcc03",
+        "reasons": [
+          "INV_EXEC_proposal_drift_requires_recommit:amount_usd"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "D_require_recommit_on_commit_drift",
+      "propose": {
+        "consumed_context_keys": [
+          "role",
+          "approval_limit_usd",
+          "approvals_used_today",
+          "approval_count_cap",
+          "context_as_of_ts",
+          "context_ttl_seconds",
+          "policy_mode"
+        ],
+        "decision": "ALLOW",
+        "hat": "EXECUTIVE_HAT_V1",
+        "proposal_fingerprint": "9105b1e285c7e1e177054b8cc32fd19ff75df0cfb6bf77ebcc6971c33f6bcc03",
+        "reasons": [],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    }
+  ]
+}
