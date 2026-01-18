@@ -1,3 +1,11 @@
+# Deterministic Action Governance (Commercial Bundle v1)
+
+## Start Here
+
+- Evaluator front door: `v2/docs/public/REPO_MAP_COMMERCIAL_V1.md`
+- Verify: `bash v2/tools/run_commercial_suite_v1.sh`
+
+
 # VERA — Deterministic AI Governance (Reference Artifact)
 
 This repository is a **governance-only verification artifact**.
