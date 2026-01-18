@@ -49,3 +49,5 @@ Artifact is provided “AS IS” under the accompanying license.
 It is an evidence artifact and does not guarantee regulatory approval or compliance.
 
 (END)
+
+Safety alignment reference (non-operational): `v2/legal/GARM_V1.md`.

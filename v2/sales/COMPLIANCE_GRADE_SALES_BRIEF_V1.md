@@ -80,3 +80,5 @@ Typical outputs:
 - bundle snapshot tied to manifest
 
 (END)
+
+For safety alignment and brand risk posture, see: `v2/legal/GARM_V1.md`.
