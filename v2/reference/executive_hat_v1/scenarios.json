@@ -1,0 +1,114 @@
+{
+  "hat_id": "EXECUTIVE_HAT_V1",
+  "scenarios": [
+    {
+      "commit": null,
+      "ctx": {
+        "approval_count_cap": 5,
+        "approval_limit_usd": 25000.0,
+        "approvals_used_today": 0,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "policy_mode": "standard",
+        "role": "CFO"
+      },
+      "expect_commit": {
+        "decision": "ALLOW"
+      },
+      "expect_propose": {
+        "decision": "ALLOW"
+      },
+      "name": "A_allowed_propose_and_commit",
+      "proposed": {
+        "amount_usd": 1000.0,
+        "data_classification": "internal",
+        "external_recipient": false,
+        "now_ts": 1100,
+        "request_type": "spend",
+        "summary": "Renew internal tooling subscription"
+      }
+    },
+    {
+      "commit": null,
+      "ctx": {
+        "approval_count_cap": 5,
+        "approval_limit_usd": 10000.0,
+        "approvals_used_today": 0,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "policy_mode": "standard",
+        "role": "CFO"
+      },
+      "expect_propose": {
+        "decision": "REFUSE",
+        "reason_contains": "spend_exceeds_approval_limit"
+      },
+      "name": "B_refuse_spend_limit",
+      "proposed": {
+        "amount_usd": 50000.0,
+        "data_classification": "internal",
+        "external_recipient": false,
+        "now_ts": 1100,
+        "request_type": "spend",
+        "summary": "Unbudgeted purchase"
+      }
+    },
+    {
+      "commit": null,
+      "ctx": {
+        "approval_count_cap": 5,
+        "approval_limit_usd": 100000.0,
+        "approvals_used_today": 0,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "policy_mode": "standard",
+        "role": "CEO"
+      },
+      "expect_propose": {
+        "decision": "REFUSE",
+        "reason_contains": "external_sharing_blocked_for_sensitive_data"
+      },
+      "name": "C_refuse_sensitive_external_share",
+      "proposed": {
+        "amount_usd": 0.0,
+        "data_classification": "confidential",
+        "external_recipient": true,
+        "now_ts": 1100,
+        "request_type": "share",
+        "summary": "Share confidential board deck externally"
+      }
+    },
+    {
+      "commit": {
+        "amount_usd": 2000.0,
+        "data_classification": "internal",
+        "external_recipient": false,
+        "now_ts": 1100,
+        "request_type": "spend",
+        "summary": "Renew internal tooling subscription"
+      },
+      "ctx": {
+        "approval_count_cap": 5,
+        "approval_limit_usd": 25000.0,
+        "approvals_used_today": 0,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "policy_mode": "standard",
+        "role": "CFO"
+      },
+      "expect_commit": {
+        "decision": "REQUIRE_RECOMMIT",
+        "reason_contains": "proposal_drift_requires_recommit:amount_usd"
+      },
+      "name": "D_require_recommit_on_commit_drift",
+      "proposed": {
+        "amount_usd": 1000.0,
+        "data_classification": "internal",
+        "external_recipient": false,
+        "now_ts": 1100,
+        "request_type": "spend",
+        "summary": "Renew internal tooling subscription"
+      }
+    }
+  ]
+}
