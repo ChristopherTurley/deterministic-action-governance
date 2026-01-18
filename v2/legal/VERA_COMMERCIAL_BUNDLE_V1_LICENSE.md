@@ -103,6 +103,17 @@ Under the Commercial Governance Reference License, the licensee may:
 
 This license grants **permission to rely**, not permission to execute.
 
+#### Formal reliance contexts (what this license enables)
+Under this license, Customer may use and cite the Artifact in formal internal governance contexts, including:
+- internal governance frameworks and control libraries
+- executive, board, and risk committee materials
+- audit preparation and evidence narratives
+- regulatory / examiner discussions (as a reference artifact, not a compliance determination)
+- internal policy and AI risk documentation
+
+**The right of reliance above is the primary commercial value of this license.**
+
+
 ---
 
 ### Shared Constraints (Both Licenses)
