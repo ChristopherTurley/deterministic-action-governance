@@ -24,4 +24,4 @@ jobs:
           pip install pytest
 
       - name: Run tests
-        run: pytest -q
+        run: bash v2/tools/run_commercial_suite_v1.sh

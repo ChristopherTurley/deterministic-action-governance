@@ -9,7 +9,7 @@ RE_REASON = re.compile(r"\bINV_[A-Z0-9_]+\b")
 
 
 def _registry_reason_codes() -> Set[str]:
-    p = Path("docs/hats/hat_reason_codes_registry_v1.md")
+    p = Path("v2/docs/hats/HAT_REASON_CODES_REGISTRY_V1.md")
     assert p.exists(), "Missing canonical reason code registry: docs/hats/hat_reason_codes_registry_v1.md"
     text = p.read_text(encoding="utf-8", errors="strict")
     return set(RE_REASON.findall(text))
