@@ -1,9 +1,7 @@
 # VERA repo hygiene
 # Generated/maintained by tools/repo_polish.py
-
 # Created by venv; see https://docs.python.org/3/library/venv.html
 *
-
 # --- VERA: keep repo rules tracked ---
 !/.gitignore
 # --- VERA: keep code tracked ---
@@ -39,16 +37,12 @@ v2/demo/hat_session_ledger.json
 # Allow root reader-experience docs
 !EVALUATE.md
 !GLOSSARY.md
-
 # Allow GitHub metadata (templates, policies)
 !.github/
 !.github/**
-
 # --- local OS / editor junk ---
-
 # --- python caches ---
 .pytest_cache/
-
 # --- local build / evaluator artifacts ---
 artifacts/
 *.tgz
@@ -63,11 +57,9 @@ vera_private_runner/
 vera_private_runner_NDA/
 data/
 *.log
-
 # Generated bundles and artifacts
 v2/nda/trading_gate_pack_v1/dist/
 *.zip
-
 # Local secrets and token caches
 .env
 .env.*
@@ -76,7 +68,6 @@ v2/nda/trading_gate_pack_v1/dist/
 **/.vera/
 **/__pycache__/
 **/*.pyc
-
 # Secrets and credentials (files, not docs)
 **/*secret.key
 **/*secret.json
@@ -90,6 +81,5 @@ v2/nda/trading_gate_pack_v1/dist/
 **/*credentials*
 **/spotify_tokens.json
 **/.vera/
-
 # Explicitly allow security policy documentation
 !SECURITY.md
