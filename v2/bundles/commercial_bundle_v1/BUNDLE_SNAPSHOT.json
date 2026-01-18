@@ -1,0 +1,15 @@
+{
+  "bundle_hats": [
+    "TRADING_HAT_V1",
+    "EXECUTIVE_HAT_V1",
+    "OPS_INCIDENT_HAT_V1",
+    "HEALTHCARE_HAT_V1",
+    "EDUCATION_HAT_V1"
+  ],
+  "bundle_id": "COMMERCIAL_BUNDLE_V1",
+  "commercial_bundle_doc_path": "v2/docs/public/COMMERCIAL_BUNDLE_V1.md",
+  "commercial_bundle_doc_sha256": "5817855fbdf96e640b653f135916343086f5a2244e5dc37720eeb813f88d7d7a",
+  "device_b_manifest_files_count": 0,
+  "device_b_manifest_path": "v2/device_b/MANIFEST.json",
+  "device_b_manifest_sha256": "3f0d21c3626ea6fb330b328750fbe8e1ad0b64be7341992fbddd28345800bd7d"
+}
