@@ -5,7 +5,6 @@ cd "$REPO" || exit 1
 
 export PYTHONPATH="."
 
-# Run only the commercial-only locked tests (source of truth)
 python -m pytest -q \
   v2/tests/test_start_here_present_v1.py \
   v2/tests/test_repo_commercial_only_lock_v1.py \
