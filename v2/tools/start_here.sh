@@ -33,15 +33,51 @@ man  = Path("v2/device_b/MANIFEST.json")
 print("BUNDLE_SNAPSHOT:", str(snap) if snap.exists() else "MISSING")
 print("DEVICE_B_MANIFEST:", str(man) if man.exists() else "MISSING")
 
+def _normalize_members(obj):
+    if obj is None:
+        return []
+    if isinstance(obj, dict):
+        return list(obj.keys())
+    if isinstance(obj, list):
+        out = []
+        for x in obj:
+            if isinstance(x, str):
+                out.append(x)
+            elif isinstance(x, dict):
+                for k in ("id","name","hat","hat_id","hat_name","key","code"):
+                    v = x.get(k)
+                    if isinstance(v, str) and v.strip():
+                        out.append(v.strip())
+                        break
+        return out
+    return []
+
+members = []
 if snap.exists():
     d = json.loads(snap.read_text(encoding="utf-8"))
-    hats = d.get("bundle_members") or d.get("members") or d.get("hats") or []
-    if isinstance(hats, dict):
-        hats = list(hats.keys())
-    if not isinstance(hats, list):
-        hats = []
-    hats = [str(x) for x in hats]
-    print("BUNDLE_MEMBERS:", ", ".join(hats) if hats else "(none parsed)")
+    candidates = []
+    if isinstance(d, dict):
+        # Try common keys + any key containing "member"
+        for k in ("bundle_members","members","hats","bundle","commercial_bundle","bundle_v1","bundle_items"):
+            if k in d:
+                candidates.append(d.get(k))
+        for k in d.keys():
+            if isinstance(k, str) and "member" in k.lower():
+                candidates.append(d.get(k))
+    for c in candidates:
+        members = _normalize_members(c)
+        if members:
+            break
+
+if members:
+    members = sorted(set([m.strip() for m in members if isinstance(m, str) and m.strip()]))
+    print("BUNDLE_MEMBERS:", ", ".join(members))
+else:
+    print("BUNDLE_MEMBERS: (none parsed) — open snapshot to confirm keys:")
+    if snap.exists():
+        d = json.loads(snap.read_text(encoding="utf-8"))
+        if isinstance(d, dict):
+            print("SNAPSHOT_TOP_KEYS:", ", ".join(sorted([str(k) for k in d.keys()])))
 PYY
 echo
 
