@@ -63,3 +63,58 @@ This license is effective upon payment and remains in effect for internal use,
 subject to termination upon material breach of the Restrictions section.
 
 (END)
+---
+
+## Evaluation License vs Commercial Governance Reference License
+
+This artifact may be licensed under one of the following non-exclusive governance reference licenses.
+Both licenses apply to the **same artifact**. No technical restrictions, feature gates, or execution controls
+differentiate the licenses. Only **rights of reliance and representation** differ.
+
+### A) Evaluation License (Non-Reliance)
+
+Under the Evaluation License, the licensee may:
+
+- Access, read, and internally circulate the artifact
+- Review governance structure, refusal semantics, and documentation
+- Use the artifact for internal education, assessment, and discussion
+- Evaluate suitability for future governance or policy use
+
+The licensee may **not**:
+
+- Represent the artifact as an approved or adopted governance baseline
+- Cite the artifact in formal policy, audit, or compliance materials
+- Rely on the artifact as authoritative in regulatory, legal, or risk decisions
+- Assert endorsement, certification, or approval by the licensor
+
+There is **no expiration** of access. The limitation applies solely to rights of reliance.
+
+---
+
+### B) Commercial Governance Reference License (Reliance Granted)
+
+Under the Commercial Governance Reference License, the licensee may:
+
+- Exercise all Evaluation License rights
+- Cite the artifact as a governance reference in internal documentation
+- Rely on the artifact in governance, risk, and policy discussions
+- Represent the artifact as an adopted governance reference
+- Use the artifact as a non-executing baseline for audits, reviews, and design discussions
+
+This license grants **permission to rely**, not permission to execute.
+
+---
+
+### Shared Constraints (Both Licenses)
+
+Regardless of license type, the artifact:
+
+- Performs no automation
+- Executes no actions
+- Integrates with no production systems
+- Enforces no policies
+- Moderates no content
+- Makes no operational decisions
+
+All outputs are explanatory, non-binding, and governance-only by design.
+
