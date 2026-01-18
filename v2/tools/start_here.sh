@@ -4,10 +4,14 @@ cd "$REPO" || exit 1
 
 echo "============================================================"
 echo "VERA v2 — COMMERCIAL BUNDLE v1 (START HERE)"
+echo
+echo "REPO_HEAD:"
+git rev-parse --short HEAD 2>/dev/null || echo "UNKNOWN"
+echo
+echo "BUNDLE_LOCK:"
 echo "============================================================"
 echo
 
-echo "COMMIT:"
 git rev-parse --short HEAD 2>/dev/null || echo "UNKNOWN"
 echo
 
