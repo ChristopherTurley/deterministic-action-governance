@@ -1,0 +1,93 @@
+{
+  "expected_prefix": "INV_HEALTH_",
+  "hat_id": "HEALTHCARE_HAT_V1",
+  "scenarios": [
+    {
+      "commit": null,
+      "ctx": {
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "org_mode": "admin",
+        "restricted_mode": false
+      },
+      "expect_commit": {
+        "decision": "ALLOW"
+      },
+      "expect_propose": {
+        "decision": "ALLOW"
+      },
+      "name": "A_allowed_admin_request",
+      "proposed": {
+        "now_ts": 1100,
+        "request_type": "admin",
+        "summary": "schedule appointment",
+        "topic": "appointment scheduling"
+      }
+    },
+    {
+      "commit": null,
+      "ctx": {
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "org_mode": "clinical",
+        "restricted_mode": false
+      },
+      "expect_propose": {
+        "decision": "REFUSE",
+        "reason_contains": "INV_HEALTH_clinical_advice_or_diagnosis_disallowed"
+      },
+      "name": "B_refuse_clinical_advice",
+      "proposed": {
+        "now_ts": 1100,
+        "request_type": "clinical",
+        "summary": "what meds should I take",
+        "topic": "diagnosis and prescription"
+      }
+    },
+    {
+      "commit": null,
+      "ctx": {
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "org_mode": "admin",
+        "restricted_mode": true
+      },
+      "expect_propose": {
+        "decision": "REFUSE",
+        "reason_contains": "INV_HEALTH_restricted_mode_blocks_sensitive_health_data"
+      },
+      "name": "C_refuse_restricted_sensitive_topic",
+      "proposed": {
+        "now_ts": 1100,
+        "request_type": "admin",
+        "summary": "send medical record content",
+        "topic": "medical record details"
+      }
+    },
+    {
+      "commit": {
+        "now_ts": 1100,
+        "request_type": "admin",
+        "summary": "billing help UPDATED",
+        "topic": "billing question"
+      },
+      "ctx": {
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "org_mode": "admin",
+        "restricted_mode": false
+      },
+      "expect_commit": {
+        "decision": "REQUIRE_RECOMMIT",
+        "reason_contains": "INV_HEALTH_proposal_drift_requires_recommit:summary"
+      },
+      "name": "D_require_recommit_on_drift",
+      "proposed": {
+        "now_ts": 1100,
+        "request_type": "admin",
+        "summary": "billing help",
+        "topic": "billing question"
+      }
+    }
+  ]
+}

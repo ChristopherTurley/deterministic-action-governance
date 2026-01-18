@@ -55,4 +55,16 @@ ALLOWLISTS_V1 = {
         "malformed_timestamps",
         "malformed_incident_fields",
     },
+    "HEALTHCARE_HAT_V1": {
+        "missing_context_keys",
+        "context_stale",
+        "clinical_advice_or_diagnosis_disallowed",
+        "restricted_mode_blocks_sensitive_health_data",
+        "proposal_not_allowed",
+        "proposal_drift_requires_recommit",
+        "malformed_input",
+        "malformed_proposal",
+        "malformed_timestamps",
+        "malformed_request_fields",
+    },
 }
