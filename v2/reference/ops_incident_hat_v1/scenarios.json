@@ -1,0 +1,97 @@
+{
+  "expected_prefix": "INV_OPS_",
+  "hat_id": "OPS_INCIDENT_HAT_V1",
+  "scenarios": [
+    {
+      "commit": null,
+      "ctx": {
+        "change_freeze": false,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "incident_mode": true,
+        "severity": "SEV2"
+      },
+      "expect_commit": {
+        "decision": "ALLOW"
+      },
+      "expect_propose": {
+        "decision": "ALLOW"
+      },
+      "name": "A_allowed_non_frozen_restart",
+      "proposed": {
+        "now_ts": 1100,
+        "op_type": "restart",
+        "risk_level": "MEDIUM",
+        "summary": "restart service during incident"
+      }
+    },
+    {
+      "commit": null,
+      "ctx": {
+        "change_freeze": true,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "incident_mode": true,
+        "severity": "SEV1"
+      },
+      "expect_propose": {
+        "decision": "REFUSE",
+        "reason_contains": "INV_OPS_incident_freeze_blocks_high_risk_ops"
+      },
+      "name": "B_refuse_high_risk_during_freeze",
+      "proposed": {
+        "now_ts": 1100,
+        "op_type": "restart",
+        "risk_level": "HIGH",
+        "summary": "high risk restart"
+      }
+    },
+    {
+      "commit": null,
+      "ctx": {
+        "change_freeze": true,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "incident_mode": true,
+        "severity": "SEV0"
+      },
+      "expect_propose": {
+        "decision": "REFUSE",
+        "reason_contains": "INV_OPS_incident_freeze_blocks_risky_op_type:deploy"
+      },
+      "name": "C_refuse_deploy_during_freeze",
+      "proposed": {
+        "now_ts": 1100,
+        "op_type": "deploy",
+        "risk_level": "MEDIUM",
+        "summary": "deploy during freeze"
+      }
+    },
+    {
+      "commit": {
+        "now_ts": 1100,
+        "op_type": "restart",
+        "risk_level": "LOW",
+        "summary": "restart changed"
+      },
+      "ctx": {
+        "change_freeze": false,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "incident_mode": false,
+        "severity": "SEV3"
+      },
+      "expect_commit": {
+        "decision": "REQUIRE_RECOMMIT",
+        "reason_contains": "INV_OPS_proposal_drift_requires_recommit:summary"
+      },
+      "name": "D_require_recommit_on_drift",
+      "proposed": {
+        "now_ts": 1100,
+        "op_type": "restart",
+        "risk_level": "LOW",
+        "summary": "restart"
+      }
+    }
+  ]
+}

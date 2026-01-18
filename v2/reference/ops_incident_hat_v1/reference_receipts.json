@@ -1,0 +1,153 @@
+{
+  "hat_id": "OPS_INCIDENT_HAT_V1",
+  "receipts": [
+    {
+      "commit": {
+        "commit_fingerprint": "db3c249c0a34f2bcb95fcddb1fbfb13461dad147feb8cb11a5411237316fb93e",
+        "consumed_context_keys": [
+          "incident_mode",
+          "severity",
+          "change_freeze",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "ALLOW",
+        "hat": "OPS_INCIDENT_HAT_V1",
+        "proposal_fingerprint": "db3c249c0a34f2bcb95fcddb1fbfb13461dad147feb8cb11a5411237316fb93e",
+        "reasons": [],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "A_allowed_non_frozen_restart",
+      "propose": {
+        "consumed_context_keys": [
+          "incident_mode",
+          "severity",
+          "change_freeze",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "ALLOW",
+        "hat": "OPS_INCIDENT_HAT_V1",
+        "proposal_fingerprint": "db3c249c0a34f2bcb95fcddb1fbfb13461dad147feb8cb11a5411237316fb93e",
+        "reasons": [],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "caf7b8a45931922d81695b03891d4507fa7bfa60f01e68b10807b8f85072a836",
+        "consumed_context_keys": [
+          "incident_mode",
+          "severity",
+          "change_freeze",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REFUSE",
+        "hat": "OPS_INCIDENT_HAT_V1",
+        "proposal_fingerprint": "caf7b8a45931922d81695b03891d4507fa7bfa60f01e68b10807b8f85072a836",
+        "reasons": [
+          "INV_OPS_proposal_not_allowed",
+          "INV_OPS_incident_freeze_blocks_high_risk_ops"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "B_refuse_high_risk_during_freeze",
+      "propose": {
+        "consumed_context_keys": [
+          "incident_mode",
+          "severity",
+          "change_freeze",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REFUSE",
+        "hat": "OPS_INCIDENT_HAT_V1",
+        "proposal_fingerprint": "caf7b8a45931922d81695b03891d4507fa7bfa60f01e68b10807b8f85072a836",
+        "reasons": [
+          "INV_OPS_incident_freeze_blocks_high_risk_ops"
+        ],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "accab9097f9bd076fc249e16fa4ab8cd36cdad0ee6cb6858c2930be3fea4da60",
+        "consumed_context_keys": [
+          "incident_mode",
+          "severity",
+          "change_freeze",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REFUSE",
+        "hat": "OPS_INCIDENT_HAT_V1",
+        "proposal_fingerprint": "accab9097f9bd076fc249e16fa4ab8cd36cdad0ee6cb6858c2930be3fea4da60",
+        "reasons": [
+          "INV_OPS_proposal_not_allowed",
+          "INV_OPS_incident_freeze_blocks_risky_op_type:deploy"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "C_refuse_deploy_during_freeze",
+      "propose": {
+        "consumed_context_keys": [
+          "incident_mode",
+          "severity",
+          "change_freeze",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REFUSE",
+        "hat": "OPS_INCIDENT_HAT_V1",
+        "proposal_fingerprint": "accab9097f9bd076fc249e16fa4ab8cd36cdad0ee6cb6858c2930be3fea4da60",
+        "reasons": [
+          "INV_OPS_incident_freeze_blocks_risky_op_type:deploy"
+        ],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "6398a578aae65f9ba632e89b69f05f9a39c9b5fca37b08dc4bc34fe862ea252d",
+        "consumed_context_keys": [
+          "incident_mode",
+          "severity",
+          "change_freeze",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REQUIRE_RECOMMIT",
+        "hat": "OPS_INCIDENT_HAT_V1",
+        "proposal_fingerprint": "9c5e24d635c28ec17ddbf31750a897b48f34ce5c8797e3fa1ade8835d74bb132",
+        "reasons": [
+          "INV_OPS_proposal_drift_requires_recommit:summary"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "D_require_recommit_on_drift",
+      "propose": {
+        "consumed_context_keys": [
+          "incident_mode",
+          "severity",
+          "change_freeze",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "ALLOW",
+        "hat": "OPS_INCIDENT_HAT_V1",
+        "proposal_fingerprint": "9c5e24d635c28ec17ddbf31750a897b48f34ce5c8797e3fa1ade8835d74bb132",
+        "reasons": [],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    }
+  ]
+}
