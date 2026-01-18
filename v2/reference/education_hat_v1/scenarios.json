@@ -1,0 +1,93 @@
+{
+  "expected_prefix": "INV_EDU_",
+  "hat_id": "EDUCATION_HAT_V1",
+  "scenarios": [
+    {
+      "commit": null,
+      "ctx": {
+        "assessment_mode": false,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "role": "student"
+      },
+      "expect_commit": {
+        "decision": "ALLOW"
+      },
+      "expect_propose": {
+        "decision": "ALLOW"
+      },
+      "name": "A_allowed_tutoring",
+      "proposed": {
+        "now_ts": 1100,
+        "request_type": "tutoring",
+        "summary": "need tutoring help",
+        "topic": "explain quadratic formula with examples"
+      }
+    },
+    {
+      "commit": null,
+      "ctx": {
+        "assessment_mode": false,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "role": "student"
+      },
+      "expect_propose": {
+        "decision": "REFUSE",
+        "reason_contains": "INV_EDU_academic_integrity_violation_cheating_request"
+      },
+      "name": "B_refuse_answer_key",
+      "proposed": {
+        "now_ts": 1100,
+        "request_type": "answer_key",
+        "summary": "give me answers",
+        "topic": "answer key for worksheet"
+      }
+    },
+    {
+      "commit": null,
+      "ctx": {
+        "assessment_mode": true,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "role": "student"
+      },
+      "expect_propose": {
+        "decision": "REFUSE",
+        "reason_contains": "INV_EDU_assessment_mode_blocks_direct_answers"
+      },
+      "name": "C_refuse_assessment_mode_direct_answer",
+      "proposed": {
+        "now_ts": 1100,
+        "request_type": "tutoring",
+        "summary": "need answer",
+        "topic": "just give the answer to problem 3"
+      }
+    },
+    {
+      "commit": {
+        "now_ts": 1100,
+        "request_type": "tutoring",
+        "summary": "make a study plan UPDATED",
+        "topic": "study plan"
+      },
+      "ctx": {
+        "assessment_mode": false,
+        "context_as_of_ts": 1000,
+        "context_ttl_seconds": 600,
+        "role": "student"
+      },
+      "expect_commit": {
+        "decision": "REQUIRE_RECOMMIT",
+        "reason_contains": "INV_EDU_proposal_drift_requires_recommit:summary"
+      },
+      "name": "D_require_recommit_on_drift",
+      "proposed": {
+        "now_ts": 1100,
+        "request_type": "tutoring",
+        "summary": "make a study plan",
+        "topic": "study plan"
+      }
+    }
+  ]
+}

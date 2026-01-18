@@ -1,0 +1,145 @@
+{
+  "hat_id": "EDUCATION_HAT_V1",
+  "receipts": [
+    {
+      "commit": {
+        "commit_fingerprint": "6b1490d069c4fbc032d783444a5d2382b6f31b053b63456264072e7837b22cdd",
+        "consumed_context_keys": [
+          "role",
+          "assessment_mode",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "ALLOW",
+        "hat": "EDUCATION_HAT_V1",
+        "proposal_fingerprint": "6b1490d069c4fbc032d783444a5d2382b6f31b053b63456264072e7837b22cdd",
+        "reasons": [],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "A_allowed_tutoring",
+      "propose": {
+        "consumed_context_keys": [
+          "role",
+          "assessment_mode",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "ALLOW",
+        "hat": "EDUCATION_HAT_V1",
+        "proposal_fingerprint": "6b1490d069c4fbc032d783444a5d2382b6f31b053b63456264072e7837b22cdd",
+        "reasons": [],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "fe9ca247126dd66399563d54339b2f1c5c90ab002da58c71227ea9744a9be7da",
+        "consumed_context_keys": [
+          "role",
+          "assessment_mode",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REFUSE",
+        "hat": "EDUCATION_HAT_V1",
+        "proposal_fingerprint": "fe9ca247126dd66399563d54339b2f1c5c90ab002da58c71227ea9744a9be7da",
+        "reasons": [
+          "INV_EDU_proposal_not_allowed",
+          "INV_EDU_academic_integrity_violation_cheating_request"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "B_refuse_answer_key",
+      "propose": {
+        "consumed_context_keys": [
+          "role",
+          "assessment_mode",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REFUSE",
+        "hat": "EDUCATION_HAT_V1",
+        "proposal_fingerprint": "fe9ca247126dd66399563d54339b2f1c5c90ab002da58c71227ea9744a9be7da",
+        "reasons": [
+          "INV_EDU_academic_integrity_violation_cheating_request"
+        ],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "e7602a56aaf4ecf51399d61c3ad4628610b6ac11f273ed19c8d246e7a3946dae",
+        "consumed_context_keys": [
+          "role",
+          "assessment_mode",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REFUSE",
+        "hat": "EDUCATION_HAT_V1",
+        "proposal_fingerprint": "e7602a56aaf4ecf51399d61c3ad4628610b6ac11f273ed19c8d246e7a3946dae",
+        "reasons": [
+          "INV_EDU_proposal_not_allowed",
+          "INV_EDU_assessment_mode_blocks_direct_answers"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "C_refuse_assessment_mode_direct_answer",
+      "propose": {
+        "consumed_context_keys": [
+          "role",
+          "assessment_mode",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REFUSE",
+        "hat": "EDUCATION_HAT_V1",
+        "proposal_fingerprint": "e7602a56aaf4ecf51399d61c3ad4628610b6ac11f273ed19c8d246e7a3946dae",
+        "reasons": [
+          "INV_EDU_assessment_mode_blocks_direct_answers"
+        ],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    },
+    {
+      "commit": {
+        "commit_fingerprint": "ef59fb155398deb64ce128f73348432f567b6c24f05d85f044ceb02ec44193f4",
+        "consumed_context_keys": [
+          "role",
+          "assessment_mode",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "REQUIRE_RECOMMIT",
+        "hat": "EDUCATION_HAT_V1",
+        "proposal_fingerprint": "d0f0141b961f69c4807206bf40f90bcb731452ad6034071d8229e32957c52103",
+        "reasons": [
+          "INV_EDU_proposal_drift_requires_recommit:summary"
+        ],
+        "stage": "COMMIT",
+        "type": "HAT_DECISION"
+      },
+      "name": "D_require_recommit_on_drift",
+      "propose": {
+        "consumed_context_keys": [
+          "role",
+          "assessment_mode",
+          "context_as_of_ts",
+          "context_ttl_seconds"
+        ],
+        "decision": "ALLOW",
+        "hat": "EDUCATION_HAT_V1",
+        "proposal_fingerprint": "d0f0141b961f69c4807206bf40f90bcb731452ad6034071d8229e32957c52103",
+        "reasons": [],
+        "stage": "PROPOSE",
+        "type": "HAT_DECISION"
+      }
+    }
+  ]
+}

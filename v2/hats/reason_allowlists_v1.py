@@ -67,4 +67,18 @@ ALLOWLISTS_V1 = {
         "malformed_timestamps",
         "malformed_request_fields",
     },
+    "EDUCATION_HAT_V1": {
+        "missing_context_keys",
+        "context_stale",
+        "academic_integrity_violation_cheating_request",
+        "assessment_mode_blocks_direct_answers",
+        "academic_integrity_violation_plagiarism_facilitation",
+        "unknown_request_type_fail_closed",
+        "proposal_not_allowed",
+        "proposal_drift_requires_recommit",
+        "malformed_input",
+        "malformed_proposal",
+        "malformed_timestamps",
+        "malformed_request_fields",
+    },
 }

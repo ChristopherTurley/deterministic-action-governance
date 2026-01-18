@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 # - fail-closed on mismatch
 
 TOOLS = [
+    ("EDUCATION_HAT_V1", "v2/tools/run_education_hat_v1.py", "v2/reference/education_hat_v1/reference_receipts.json"),
     ("HEALTHCARE_HAT_V1", "v2/tools/run_healthcare_hat_v1.py", "v2/reference/healthcare_hat_v1/reference_receipts.json"),
     ("TRADING_HAT_V1", "v2/tools/run_trading_hat_v1.py", "v2/reference/trading_hat_v1/reference_receipts.json"),
     ("EXECUTIVE_HAT_V1", "v2/tools/run_executive_hat_v1.py", "v2/reference/executive_hat_v1/reference_receipts.json"),

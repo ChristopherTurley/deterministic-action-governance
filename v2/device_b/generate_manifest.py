@@ -45,6 +45,15 @@ FILES = [
     "v2/tools/run_healthcare_hat_v1.py",
     "v2/tests/test_healthcare_hat_v1_freeze.py",
 
+
+    # education hat frozen surfaces
+    "v2/hats/education_hat_v1.py",
+    "v2/docs/hats/EDUCATION_HAT_V1.md",
+    "v2/reference/education_hat_v1/scenarios.json",
+    "v2/reference/education_hat_v1/reference_receipts.json",
+    "v2/tools/run_education_hat_v1.py",
+    "v2/tests/test_education_hat_v1_freeze.py",
+
     # device-b tools
     "v2/device_b/verify_all.py",
 ]
