@@ -134,3 +134,52 @@ function wireUI() {
   await loadPolicy().catch(() => {});
   await loadReceipts().catch(() => {});
 })();
+
+
+function apiFetch(path, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  if (ADMIN_TOKEN) {
+    headers["Authorization"] = "Bearer " + ADMIN_TOKEN;
+  }
+  return fetch(path, Object.assign({}, opts, { headers }));
+}
+
+function setAuthPill(ok) {
+  const el = document.getElementById("authPill");
+  if (!el) return;
+  el.textContent = ok ? "AUTH: OK" : "AUTH: UNAUTHORIZED";
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const tokenInput = document.getElementById("adminToken");
+  const setBtn = document.getElementById("setTokenBtn");
+  const clearBtn = document.getElementById("clearTokenBtn");
+
+  if (setBtn && tokenInput) {
+    setBtn.addEventListener("click", () => {
+      ADMIN_TOKEN = (tokenInput.value || "").trim();
+      if (!ADMIN_TOKEN) {
+        setAuthPill(false);
+        alert("Admin token is empty.");
+        return;
+      }
+      // Immediately test auth by calling /api/status
+      apiFetch("/api/status")
+        .then(r => {
+          if (r.status === 200) setAuthPill(true);
+          else setAuthPill(false);
+          return r.text();
+        })
+        .catch(() => setAuthPill(false));
+    });
+  }
+
+  if (clearBtn && tokenInput) {
+    clearBtn.addEventListener("click", () => {
+      ADMIN_TOKEN = null;
+      tokenInput.value = "";
+      setAuthPill(false);
+    });
+  }
+});

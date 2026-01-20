@@ -3,7 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DAG Sidecar Admin UI</title>
+  <title>DAG Sidecar Admin UI
+      <div class="authbar">
+        <div class="auth-left">
+          <span class="auth-label">Admin Token</span>
+          <input id="adminToken" type="password" placeholder="Bearer token (in-memory only)" autocomplete="off" />
+          <button id="setTokenBtn" type="button">Set</button>
+          <button id="clearTokenBtn" type="button" class="secondary">Clear</button>
+        </div>
+        <div class="auth-right">
+          <span class="pill" id="authPill">AUTH: UNKNOWN</span>
+        </div>
+      </div>
+</title>
   <link rel="stylesheet" href="/static/styles.css?v=1768880865" />
 </head>
 <body>
