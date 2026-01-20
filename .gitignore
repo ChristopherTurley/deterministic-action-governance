@@ -94,3 +94,4 @@ enterprise_sidecar/**
 !enterprise_sidecar/policy/**
 !enterprise_sidecar/examples/
 !enterprise_sidecar/examples/**
+!ui/.env.example
