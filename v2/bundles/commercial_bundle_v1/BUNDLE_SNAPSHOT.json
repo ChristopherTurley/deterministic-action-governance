@@ -8,8 +8,8 @@
   ],
   "bundle_id": "COMMERCIAL_BUNDLE_V1",
   "commercial_bundle_doc_path": "v2/docs/public/COMMERCIAL_BUNDLE_V1.md",
-  "commercial_bundle_doc_sha256": "5817855fbdf96e640b653f135916343086f5a2244e5dc37720eeb813f88d7d7a",
+  "commercial_bundle_doc_sha256": "0fd462d0b3b9682dd0593452f6c8d477742456c02d566ce6c247e7639b92cb35",
   "device_b_manifest_files_count": 0,
   "device_b_manifest_path": "v2/device_b/MANIFEST.json",
-  "device_b_manifest_sha256": "3f0d21c3626ea6fb330b328750fbe8e1ad0b64be7341992fbddd28345800bd7d"
+  "device_b_manifest_sha256": "52696a653b3da156e3cc2bc0c7e375cefaffdd312afe6bcd06d40ba4eee1a33f"
 }
