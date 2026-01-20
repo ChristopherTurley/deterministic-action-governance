@@ -3,8 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DAG Sidecar Admin UI
-</title>
+  <title>DAG Sidecar Admin UI</title>
   <link rel="stylesheet" href="/static/styles.css?v=1768880865" />
 </head>
 <body>
@@ -24,13 +23,18 @@
   </nav>
 
   <div class="authbar">
-    <div class="authlabel">Admin Token</div>
-    <input id="tokenInput" type="password" placeholder="Paste UI_ADMIN_TOKEN (in-memory only)" />
-    <button id="btnSetToken">Set</button>
-    <div class="authhint">Not stored. Required for Policy/Receipts/Status.</div>
+    <div class="auth-left">
+      <span class="auth-label">Admin Token</span>
+      <input id="tokenInput" type="password" placeholder="Paste UI_ADMIN_TOKEN (in-memory only)" autocomplete="off" />
+      <button id="btnSetToken" type="button">Set</button>
+      <button id="btnClearToken" type="button" class="secondary">Clear</button>
+    </div>
+    <div class="auth-right">
+      <span class="pill unknown" id="authPill">AUTH: UNKNOWN</span>
+    </div>
   </div>
 
-  <main class="container">
+<main class="container">
     <section id="policy" class="panel show">
       <div class="panelHeader">
         <div>

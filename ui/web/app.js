@@ -1,9 +1,9 @@
 let ADMIN_TOKEN = null;
 async function api(path, opts) {
-  const headers = Object.assign({ "content-type": "application/json" }, (opts && opts.headers) ? opts.headers : {});
-  if (ADMIN_TOKEN && String(ADMIN_TOKEN).trim().length > 0) {
-    headers["Authorization"] = "Bearer " + String(ADMIN_TOKEN).trim();
-  }
+  const baseHeaders = { "content-type": "application/json" };
+  const optHeaders = (opts && opts.headers) ? opts.headers : {};
+  const headers = Object.assign({}, baseHeaders, optHeaders);
+  if (ADMIN_TOKEN) headers["Authorization"] = `Bearer ${ADMIN_TOKEN}`;
   const res = await fetch(path, Object.assign({ headers }, opts || {}));
   const ct = res.headers.get("content-type") || "";
   const body = ct.includes("application/json") ? await res.json() : await res.text();
