@@ -6,18 +6,45 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from jsonschema import Draft202012Validator
 
 APP = FastAPI(title="DAG Sidecar Admin UI", version="1.0.0")
 
+def _is_api_path(path: str) -> bool:
+    return path.startswith("/api/")
+
+def _extract_bearer(auth_header: str) -> str:
+    if not auth_header:
+        return ""
+    m = re.match(r"^\s*Bearer\s+(.+?)\s*$", auth_header)
+    return m.group(1) if m else ""
+
+@APP.middleware("http")
+async def _auth_middleware(request: Request, call_next):
+    # Public: UI shell + static assets
+    if not _is_api_path(request.url.path):
+        return await call_next(request)
+
+    # If UI_ADMIN_TOKEN is unset, fail closed (auditor-friendly)
+    if not UI_ADMIN_TOKEN:
+        return JSONResponse(status_code=503, content={"detail": "UI_ADMIN_TOKEN not configured"})
+
+    token = _extract_bearer(request.headers.get("authorization", ""))
+    if token != UI_ADMIN_TOKEN:
+        return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+
+    return await call_next(request)
+
+
 # -------- Config (fail-closed defaults) --------
 SIDECAR_BASE_URL = os.getenv("SIDECAR_BASE_URL", "").strip()
 POLICY_PATH = os.getenv("POLICY_PATH", "enterprise_sidecar/policy/policy_v1.example.json").strip()
 RECEIPTS_DIR = os.getenv("RECEIPTS_DIR", "ui/runtime/receipts").strip()
 READ_ONLY = os.getenv("READ_ONLY", "1").strip() != "0"
+UI_ADMIN_TOKEN = os.getenv("UI_ADMIN_TOKEN", "").strip()
 
 REPO_ROOT = Path(__file__).resolve().parents[1]  # repo root (ui/server.py -> repo/)
 POLICY_FILE = (REPO_ROOT / POLICY_PATH).resolve()
