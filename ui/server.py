@@ -122,54 +122,68 @@ def favicon():
 # -------- API: Status --------
 @APP.get("/api/status")
 def api_status() -> Dict[str, Any]:
-    # Local policy info (hash/version)
-    policy = _load_json(POLICY_FILE)
-    policy_hash = _sha256_hex_json(policy)
-    policy_version = policy.get("policy_version", "unknown")
-    policy_id = policy.get("policy_id", "unknown")
+    try:
+        # Local policy info (hash/version)
+        policy = _load_json(POLICY_FILE)
+        policy_hash = _sha256_hex_json(policy)
+        policy_version = policy.get("policy_version", "unknown")
+        policy_id = policy.get("policy_id", "unknown")
 
-    # Sidecar live endpoints (optional)
-    health = _sidecar_get("/healthz")
-    version = _sidecar_get("/version")
+        # Sidecar live endpoints (optional)
+        health = _sidecar_get("/healthz")
+        version = _sidecar_get("/version")
 
-    # Latency quick stats from receipts
-    RECEIPTS_PATH.mkdir(parents=True, exist_ok=True)
-    latencies = []
-    for p in sorted(RECEIPTS_PATH.glob("*.json"))[-200:]:
-        try:
-            obj = json.loads(p.read_text(encoding="utf-8"))
-            lm = obj.get("latency_ms")
-            if isinstance(lm, int):
-                latencies.append(lm)
-        except Exception:
-            continue
-    latencies.sort()
-    def pct(q: float) -> Optional[int]:
-        if not latencies:
-            return None
-        idx = int(round((len(latencies)-1) * q))
-        return latencies[max(0, min(idx, len(latencies)-1))]
+        # Latency quick stats from receipts
+        RECEIPTS_PATH.mkdir(parents=True, exist_ok=True)
+        latencies = []
+        for p in sorted(RECEIPTS_PATH.glob("*.json"))[-200:]:
+            try:
+                obj = json.loads(p.read_text(encoding="utf-8"))
+                lm = obj.get("latency_ms")
+                if isinstance(lm, int):
+                    latencies.append(lm)
+            except Exception:
+                continue
+        latencies.sort()
 
-    return {
-        "read_only": READ_ONLY,
-        "policy": {
-            "policy_id": policy_id,
-            "policy_version": policy_version,
-            "policy_hash": policy_hash,
-            "policy_path": str(POLICY_FILE.relative_to(REPO_ROOT)),
-        },
-        "sidecar": {
-            "base_url": SIDECAR_BASE_URL or None,
-            "healthz": health,
-            "version": version,
-        },
-        "latency_ms": {
-            "count": len(latencies),
-            "p50": pct(0.50),
-            "p95": pct(0.95),
-            "p99": pct(0.99),
-        },
-    }
+        def pct(q: float):
+            if not latencies:
+                return None
+            idx = int(round((len(latencies) - 1) * q))
+            return latencies[max(0, min(idx, len(latencies) - 1))]
+
+        return {
+            "ok": True,
+            "read_only": READ_ONLY,
+            "policy": {
+                "policy_id": policy_id,
+                "policy_version": policy_version,
+                "policy_hash": policy_hash,
+                "policy_path": str(POLICY_FILE.relative_to(REPO_ROOT)),
+            },
+            "sidecar": {
+                "base_url": SIDECAR_BASE_URL or None,
+                "healthz": health,
+                "version": version,
+            },
+            "latency_ms": {
+                "count": len(latencies),
+                "p50": pct(0.50),
+                "p95": pct(0.95),
+                "p99": pct(0.99),
+            },
+        }
+    except Exception as e:
+        # Fail-soft: status endpoint should never crash the UI.
+        return {
+            "ok": False,
+            "read_only": READ_ONLY,
+            "error": str(e),
+            "policy_path": str(POLICY_PATH),
+            "receipts_dir": str(RECEIPTS_DIR),
+            "sidecar_base_url": SIDECAR_BASE_URL or None,
+        }
+
 
 # -------- API: Policy --------
 @APP.get("/api/policy")
