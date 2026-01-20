@@ -41,3 +41,11 @@ input { width: 100%; padding:10px; border-radius:12px; border:1px solid #2a3040;
 /* --- Auth pill + disabled button polish --- */
 .pill { display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #ccc; font-size:12px; }
 button[disabled] { opacity:0.5; cursor:not-allowed; }
+
+
+#authPill { margin-left: 10px; }
+.pill.ok { }
+.pill.bad { }
+.pill.unknown { }
+
+#btnExportEvidence { }
