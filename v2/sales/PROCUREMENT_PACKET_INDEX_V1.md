@@ -43,3 +43,6 @@ Enterprise demo surfaces (explicitly non-artifact)
 - `v2/docs/public/ENTERPRISE_SURFACES_POINTER.md`
 
 (END)
+
+Optional background (non-procurement)
+- `v2/docs/public/OPTIONAL_BACKGROUND_INDEX.md`

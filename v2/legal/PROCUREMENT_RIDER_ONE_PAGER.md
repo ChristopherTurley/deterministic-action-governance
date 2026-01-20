@@ -1,7 +1,7 @@
 # Procurement Rider — What You’re Buying (Plain English)
 
 ## What this is
-- A **$100k governance verification artifact**
+- A **$100,000,000 governance verification artifact**
 - You can run it offline/air-gapped
 - It produces deterministic, replayable decision receipts
 - It helps you evaluate AI governance claims without trusting a vendor’s runtime system

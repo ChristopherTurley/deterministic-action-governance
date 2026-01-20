@@ -2,7 +2,7 @@
 
 Date: 2026-01-17
 Purchase: VERA Commercial Bundle v1 (Governance Verification Artifact)
-Fee: $100,000 (one-time artifact license; no implied services)
+Fee: Launch $50,000 (current) / List $100,000 (future) (one-time artifact license; no implied services)
 
 ## 1) Purpose of purchase
 This purchase provides an **offline, deterministic governance verification artifact** used to:

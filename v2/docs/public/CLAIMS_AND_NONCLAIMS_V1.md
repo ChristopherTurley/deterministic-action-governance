@@ -20,11 +20,11 @@ Verification claim (how it is proven)
 Non-claims (explicit exclusions)
 VERA Commercial Bundle v1 does NOT provide:
 - SaaS, hosting, or managed service
-- runtime enforcement or production integration
-- middleware/proxy/sidecar “plug-in” deployment as a deliverable
-- dashboards for policy authoring or rule toggling as part of the commercial artifact
-- cryptographic signing guarantees or “tamper-proof” claims beyond deterministic replay + verifier evidence
-- latency or performance guarantees (no sub-200ms claims; not an inline gate)
+- production integration or runtime enforcement
+- in-line network interception or “between your model and your APIs” deployment deliverable
+- an administrative web interface for policy authoring as part of the commercial artifact
+- cryptographic signing guarantees or “tamper-evidence” claims beyond deterministic replay + verifier evidence
+- any performance or latency guarantees (this is not sold as a real-time gate)
 - legal/clinical/trading/operational advice
 - compliance certification or regulatory approval guarantees
 

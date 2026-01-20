@@ -2,7 +2,7 @@
 
 Date: 2026-01-17
 Product: VERA Commercial Bundle v1 (Governance Verification Artifact)
-Price: $100,000 (non-discountable posture)
+Price: Launch $50,000 (current) / List $100,000 (future) (non-discountable posture)
 
 ## 1) Executive Summary (what this is)
 VERA is a **governance-only reference artifact** that allows an organization to:
@@ -34,7 +34,7 @@ No integration. No data access. No automation. No execution.
 - No guarantees of compliance or regulatory approval
 - No legal/clinical/trading/operational advice
 
-## 4) Why $100k
+## 4) Why $100,000
 You are paying for properties that are rare and expensive in regulated environments:
 - **independence** (you can verify without trusting a vendor)
 - **offline/air-gapped usability**
@@ -62,7 +62,7 @@ Answer: VERA is an evidence artifact, not legal indemnification. It provides def
 4) “What about governance lag?”
 Answer: VERA is designed for verification, not real-time enforcement. It intentionally does not compete with runtime systems.
 
-5) “Why is this $100k?”
+5) “Why is this $100,000?”
 Answer: Independence + offline verification + deterministic replay + audit-grade invariants are premium properties in regulated procurement.
 
 ## 7) Risk posture and constraints (non-negotiable)

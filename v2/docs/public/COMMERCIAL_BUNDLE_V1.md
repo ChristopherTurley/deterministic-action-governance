@@ -1,7 +1,7 @@
 # VERA — Commercial Bundle v1 (LOCKED PACKAGING)
 
 Purpose
-- Define the *contracted* $100k governance bundle surfaces.
+- Define the *contracted* $100,000 governance bundle surfaces.
 - This is a packaging definition, not a capability expansion.
 - The repository may contain additional hats for demonstration, but they are **NOT** part of the commercial bundle unless listed here.
 
@@ -27,7 +27,7 @@ Commercial Bundle v1 (exactly five hats)
    - Freeze tag: (to be created)
 
 Non-included hats
-- Any hat not listed above is explicitly **out of scope** for the $100k bundle.
+- Any hat not listed above is explicitly **out of scope** for the $100,000 bundle.
 - They exist only as governance demonstrations and are not promised, licensed, or supported as part of the commercial bundle.
 
 No customization clause (packaging)
