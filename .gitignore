@@ -84,6 +84,11 @@ v2/nda/trading_gate_pack_v1/dist/
 !SECURITY.md
 assistant/
 # --- Enterprise sidecar (open-core allowlist) ---
+!enterprise_sidecar/
 enterprise_sidecar/**
+!enterprise_sidecar/docs/
 !enterprise_sidecar/docs/**
+!enterprise_sidecar/schema/
 !enterprise_sidecar/schema/**
+!enterprise_sidecar/policy/
+!enterprise_sidecar/policy/**
