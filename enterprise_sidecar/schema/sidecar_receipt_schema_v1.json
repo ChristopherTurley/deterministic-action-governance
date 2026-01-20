@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DAG Sidecar Receipt v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "timestamp_utc",
+    "sidecar_instance_id",
+    "engine",
+    "policy",
+    "proposal",
+    "decision",
+    "latency_ms",
+    "chain",
+    "signature"
+  ],
+  "properties": {
+    "schema_version": { "const": "sidecar_receipt_v1" },
+    "receipt_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "timestamp_utc": { "type": "string" },
+    "sidecar_instance_id": { "type": "string" },
+
+    "engine": {
+      "type": "object",
+      "required": ["engine_name", "engine_version", "build_id"],
+      "properties": {
+        "engine_name": { "const": "DAG_SIDECAR" },
+        "engine_version": { "type": "string" },
+        "build_id": { "type": "string" }
+      }
+    },
+
+    "policy": {
+      "type": "object",
+      "required": ["policy_id", "policy_version", "policy_hash"],
+      "properties": {
+        "policy_id": { "type": "string" },
+        "policy_version": { "type": "string" },
+        "policy_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+
+    "proposal": {
+      "type": "object",
+      "required": ["proposal_id", "proposal_hash", "action_type", "actor_type"],
+      "properties": {
+        "proposal_id": { "type": "string" },
+        "proposal_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "action_type": { "type": "string" },
+        "actor_type": { "type": "string", "enum": ["user", "agent", "system"] },
+        "requested_at_utc": { "type": "string" }
+      }
+    },
+
+    "decision": {
+      "type": "object",
+      "required": ["status", "rule_ids"],
+      "properties": {
+        "status": { "type": "string", "enum": ["ALLOW", "REFUSE"] },
+        "refusal_code": { "type": "string" },
+        "refusal_reason": { "type": "string" },
+        "allow_reason": { "type": "string" },
+        "rule_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "latency_ms": { "type": "integer", "minimum": 0 },
+
+    "chain": {
+      "type": "object",
+      "required": ["prev_receipt_id", "chain_hash"],
+      "properties": {
+        "prev_receipt_id": { "type": "string" },
+        "chain_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+
+    "signature": {
+      "type": "object",
+      "required": ["alg", "key_id", "sig", "signing_payload_hash"],
+      "properties": {
+        "alg": { "const": "ed25519" },
+        "key_id": { "type": "string" },
+        "sig": { "type": "string" },
+        "signing_payload_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    }
+  }
+}
