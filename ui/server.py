@@ -1,5 +1,6 @@
 \
 import hashlib
+import re
 import json
 import os
 from pathlib import Path
@@ -17,10 +18,13 @@ def _is_api_path(path: str) -> bool:
     return path.startswith("/api/")
 
 def _extract_bearer(auth_header: str) -> str:
-    if not auth_header:
+    try:
+        if not auth_header:
+            return ""
+        m = re.match(r"^\s*Bearer\s+(.+?)\s*$", auth_header)
+        return m.group(1) if m else ""
+    except Exception:
         return ""
-    m = re.match(r"^\s*Bearer\s+(.+?)\s*$", auth_header)
-    return m.group(1) if m else ""
 
 @APP.middleware("http")
 async def _auth_middleware(request: Request, call_next):
