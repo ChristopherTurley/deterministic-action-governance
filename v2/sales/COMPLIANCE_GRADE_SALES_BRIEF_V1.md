@@ -34,7 +34,7 @@ No integration. No data access. No automation. No execution.
 - No guarantees of compliance or regulatory approval
 - No legal/clinical/trading/operational advice
 
-## 4) Why $100,000
+## 4) Why $100k
 You are paying for properties that are rare and expensive in regulated environments:
 - **independence** (you can verify without trusting a vendor)
 - **offline/air-gapped usability**
