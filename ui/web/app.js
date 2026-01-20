@@ -15,6 +15,7 @@ async function api(path, opts) {
 }
 
 
+
 function setTab(name) {
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("show", p.id === name));
@@ -203,4 +204,32 @@ function gatedBoot() {
 
 document.addEventListener("DOMContentLoaded", () => {
   try { setAuthPill("AUTH: REQUIRED"); } catch(e) {}
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  try { setAuthPill("AUTH: REQUIRED"); } catch(e) {}
+  const inp = document.getElementById("tokenInput");
+  const btnSet = document.getElementById("btnSetToken");
+  const btnClear = document.getElementById("btnClearToken");
+  if (btnSet && inp) {
+    btnSet.addEventListener("click", async () => {
+      ADMIN_TOKEN = (inp.value || "").trim();
+      if (!ADMIN_TOKEN) { try { setAuthPill("AUTH: REQUIRED"); } catch(e) {} return; }
+      try { await api("/api/status"); try { setAuthPill("AUTH: OK"); } catch(e) {} }
+      catch(e) { try { setAuthPill("AUTH: UNAUTHORIZED"); } catch(e) {} }
+    });
+  }
+  if (btnClear && inp) {
+    btnClear.addEventListener("click", () => {
+      ADMIN_TOKEN = null;
+      inp.value = "";
+      try { setAuthPill("AUTH: REQUIRED"); } catch(e) {}
+    });
+  }
+  const btnExport = document.getElementById("btnExportEvidence");
+  if (btnExport) {
+    btnExport.addEventListener("click", () => {
+      alert("Export Evidence Bundle is a stub (UI-only). Evidence bundling will be implemented in the sidecar layer.");
+    });
+  }
 });
