@@ -1,7 +1,10 @@
-let ADMIN_TOKEN = "";
-
+let ADMIN_TOKEN = null;
 async function api(path, opts) {
-  const res = await fetch(path, Object.assign({ headers: { "content-type": "application/json" } }, opts || {}));
+  const headers = Object.assign({ "content-type": "application/json" }, (opts && opts.headers) ? opts.headers : {});
+  if (ADMIN_TOKEN && String(ADMIN_TOKEN).trim().length > 0) {
+    headers["Authorization"] = "Bearer " + String(ADMIN_TOKEN).trim();
+  }
+  const res = await fetch(path, Object.assign({ headers }, opts || {}));
   const ct = res.headers.get("content-type") || "";
   const body = ct.includes("application/json") ? await res.json() : await res.text();
   if (!res.ok) {
@@ -10,6 +13,7 @@ async function api(path, opts) {
   }
   return body;
 }
+
 
 function setTab(name) {
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
