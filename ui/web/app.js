@@ -199,3 +199,8 @@ function gatedBoot() {
   try { refreshPolicy && refreshPolicy(); } catch(e) {}
   try { refreshReceipts && refreshReceipts(); } catch(e) {}
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  try { setAuthPill("AUTH: REQUIRED"); } catch(e) {}
+});
