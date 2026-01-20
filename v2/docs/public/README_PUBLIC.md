@@ -1,4 +1,4 @@
-# VERA v2 — Deterministic Action Governance (Public Reference)
+# VERA — Deterministic Action Governance (Public Reference)
 
 This is a reference artifact demonstrating deterministic action governance:
 
@@ -36,8 +36,9 @@ Each decision emits a ledger event with:
 - No background memory
 - No autonomous execution
 - No implicit domain routing
+- No integrations or runtime enforcement
 
-## One-command verification
+## One-command verification (commercial proof)
 
 From repo root:
-v2/demo/scripts/run_all_demos.sh
+- `bash v2/tools/run_commercial_suite_v1.sh`
