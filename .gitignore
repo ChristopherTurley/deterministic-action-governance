@@ -92,3 +92,5 @@ enterprise_sidecar/**
 !enterprise_sidecar/schema/**
 !enterprise_sidecar/policy/
 !enterprise_sidecar/policy/**
+!enterprise_sidecar/examples/
+!enterprise_sidecar/examples/**

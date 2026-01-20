@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DAG Sidecar Evaluate Request v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "proposal_id",
+    "actor_type",
+    "action_type",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sidecar_evaluate_request_v1"
+    },
+    "proposal_id": {
+      "type": "string"
+    },
+    "actor_type": {
+      "type": "string",
+      "enum": [
+        "user",
+        "agent",
+        "system"
+      ]
+    },
+    "action_type": {
+      "type": "string"
+    },
+    "requested_at_utc": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    },
+    "context": {
+      "type": "object"
+    }
+  }
+}

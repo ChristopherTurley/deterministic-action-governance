@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DAG Sidecar Evaluate Response v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "decision",
+    "receipt_id",
+    "policy_version",
+    "rule_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sidecar_evaluate_response_v1"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "ALLOW",
+        "REFUSE"
+      ]
+    },
+    "refusal_code": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "policy_version": {
+      "type": "string"
+    },
+    "rule_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "latency_ms": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}
