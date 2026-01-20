@@ -187,3 +187,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+
+function gatedBoot() {
+  if (!ADMIN_TOKEN || String(ADMIN_TOKEN).trim().length === 0) {
+    // Don't call protected endpoints until authorized.
+    return;
+  }
+  // Try to refresh panels now that auth is present.
+  try { refreshStatus && refreshStatus(); } catch(e) {}
+  try { refreshPolicy && refreshPolicy(); } catch(e) {}
+  try { refreshReceipts && refreshReceipts(); } catch(e) {}
+}
