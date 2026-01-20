@@ -21,6 +21,13 @@
     <button class="tab" data-tab="status">Status</button>
   </nav>
 
+  <div class="authbar">
+    <div class="authlabel">Admin Token</div>
+    <input id="tokenInput" type="password" placeholder="Paste UI_ADMIN_TOKEN (in-memory only)" />
+    <button id="btnSetToken">Set</button>
+    <div class="authhint">Not stored. Required for Policy/Receipts/Status.</div>
+  </div>
+
   <main class="container">
     <section id="policy" class="panel show">
       <div class="panelHeader">

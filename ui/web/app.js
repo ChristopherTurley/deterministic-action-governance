@@ -1,3 +1,5 @@
+let ADMIN_TOKEN = "";
+
 async function api(path, opts) {
   const res = await fetch(path, Object.assign({ headers: { "content-type": "application/json" } }, opts || {}));
   const ct = res.headers.get("content-type") || "";
@@ -90,6 +92,24 @@ async function loadReceipts() {
 }
 
 function wireUI() {
+  const tokenInput = document.getElementById("tokenInput");
+  const btnSetToken = document.getElementById("btnSetToken");
+  if (btnSetToken && tokenInput) {
+    btnSetToken.onclick = async () => {
+      ADMIN_TOKEN = (tokenInput.value || "").trim();
+      try {
+        await loadStatus();
+        await loadPolicy();
+        await loadReceipts();
+      } catch (e) {
+        alert(String(e.message || e));
+      }
+    };
+    tokenInput.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") btnSetToken.click();
+    });
+  }
+
   document.querySelectorAll(".tab").forEach(b => {
     b.onclick = () => setTab(b.dataset.tab);
   });
