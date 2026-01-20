@@ -36,3 +36,10 @@ Optional orientation for first-time evaluators:
 **Enterprise deployment orientation (non-artifact):**
 See `docs/START_HERE_ENTERPRISE.md` for operational deployment context.
 This does not modify or supersede the v2 governance reference artifact.
+
+
+---
+
+**Enterprise deployment orientation (non-artifact):**
+See `docs/START_HERE_ENTERPRISE.md` for operational deployment context.
+This does not modify or supersede the v2 governance reference artifact.
