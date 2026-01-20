@@ -88,6 +88,10 @@ def index() -> str:
     index_file = (Path(__file__).parent / "web" / "index.html").resolve()
     return index_file.read_text(encoding="utf-8")
 
+@APP.get("/favicon.ico")
+def favicon():
+    return FileResponse(str((Path(__file__).parent / "web" / "favicon.svg").resolve()), media_type="image/svg+xml")
+
 # -------- API: Status --------
 @APP.get("/api/status")
 def api_status() -> Dict[str, Any]:
