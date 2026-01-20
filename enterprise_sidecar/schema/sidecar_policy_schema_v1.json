@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DAG Sidecar Policy v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "policy_id",
+    "policy_version",
+    "defaults",
+    "rules"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "sidecar_policy_v1"
+    },
+    "policy_id": {
+      "type": "string"
+    },
+    "policy_version": {
+      "type": "string"
+    },
+    "defaults": {
+      "type": "object",
+      "required": [
+        "fail_closed"
+      ],
+      "properties": {
+        "fail_closed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "enabled",
+          "action_type",
+          "match",
+          "constraints",
+          "decision"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "action_type": {
+            "type": "string"
+          },
+          "match": {
+            "type": "object"
+          },
+          "constraints": {
+            "type": "object"
+          },
+          "decision": {
+            "type": "object",
+            "required": [
+              "on_violation",
+              "on_pass"
+            ],
+            "properties": {
+              "on_violation": {
+                "type": "object",
+                "required": [
+                  "status",
+                  "refusal_code",
+                  "reason"
+                ],
+                "properties": {
+                  "status": {
+                    "const": "REFUSE"
+                  },
+                  "refusal_code": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "on_pass": {
+                "type": "object",
+                "required": [
+                  "status",
+                  "reason"
+                ],
+                "properties": {
+                  "status": {
+                    "const": "ALLOW"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

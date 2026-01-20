@@ -1,0 +1,56 @@
+{
+  "schema_version": "sidecar_policy_v1",
+  "policy_id": "default",
+  "policy_version": "1.0.0",
+  "defaults": {
+    "fail_closed": true
+  },
+  "rules": [
+    {
+      "rule_id": "PAYMENT_MAX_AMOUNT_10000",
+      "enabled": true,
+      "action_type": "payment",
+      "match": {
+        "currency": "USD"
+      },
+      "constraints": {
+        "max_amount": 10000
+      },
+      "decision": {
+        "on_violation": {
+          "status": "REFUSE",
+          "refusal_code": "AMOUNT_LIMIT_EXCEEDED",
+          "reason": "payment amount exceeds configured maximum"
+        },
+        "on_pass": {
+          "status": "ALLOW",
+          "reason": "payment within configured maximum"
+        }
+      }
+    },
+    {
+      "rule_id": "DATA_ACCESS_BLOCK_SSN",
+      "enabled": true,
+      "action_type": "data_access",
+      "match": {
+        "resource_type": "pii"
+      },
+      "constraints": {
+        "blocked_fields": [
+          "ssn"
+        ]
+      },
+      "decision": {
+        "on_violation": {
+          "status": "REFUSE",
+          "refusal_code": "SENSITIVE_DATA_BLOCKED",
+          "reason": "requested access includes blocked sensitive fields"
+        },
+        "on_pass": {
+          "status": "ALLOW",
+          "reason": "data access does not include blocked fields"
+        }
+      }
+    }
+  ]
+}
