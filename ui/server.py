@@ -14,6 +14,11 @@ from jsonschema import Draft202012Validator
 
 APP = FastAPI(title="DAG Sidecar Admin UI", version="1.0.0")
 
+
+@APP.get("/healthz")
+async def healthz():
+    return {"ok": True, "service": "dag-sidecar-admin-ui", "auth_required": False}
+
 def _is_api_path(path: str) -> bool:
     return path.startswith("/api/")
 
