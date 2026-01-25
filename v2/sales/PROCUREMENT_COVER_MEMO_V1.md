@@ -10,3 +10,4 @@ It is offline, deterministic, and version-locked.
 - **Annual Governance Continuity Renewal:** $50,000 (optional; maintains access to newly evaluated releases and continued reliance rights)
 
 Vendor will NOT:
+- access customer systems
