@@ -10,4 +10,14 @@ It is offline, deterministic, and version-locked.
 - **Annual Governance Continuity Renewal:** $50,000 (optional; maintains access to newly evaluated releases and continued reliance rights)
 
 Vendor will NOT:
+- access or process customer data
 - access customer systems
+
+
+Objective acceptance criteria
+- Device-B verifier
+
+No ongoing support is implied.
+
+Artifact is provided AS IS.
+This evidence artifact does not guarantee regulatory approval.
