@@ -3,6 +3,7 @@
 Date: 2026-01-17
 
 VERA is an evaluation artifact, not service.
+It is offline, deterministic, and version-locked.
 
 **Purchase**
 - **Initial License Fee:** $100,000 (one-time; applies to the evaluated artifact version)
