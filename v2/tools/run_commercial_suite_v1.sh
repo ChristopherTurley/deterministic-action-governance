@@ -1,4 +1,8 @@
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${0}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${REPO_ROOT}"
+set -euo pipefail
 
 REPO="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$REPO" || exit 1
