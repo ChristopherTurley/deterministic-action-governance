@@ -1,14 +1,13 @@
+set -eu
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$REPO_ROOT" || exit 1
+
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${0}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "${REPO_ROOT}"
 set -euo pipefail
-
-REPO="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-cd "$REPO" || exit 1
-
 echo "=== COMMERCIAL SUITE v1 (CI-safe) ==="
-
 echo "=== 0) LOCAL SETUP (venv + pytest; untracked; idempotent) ==="
 if [ ! -d venv ]; then
   python3 -m venv venv
@@ -17,7 +16,6 @@ fi
 python -m pip install -U pip >/dev/null
 python -m pip install -U pytest >/dev/null
 export PYTHONPATH="."
-
 echo "=== 1) RUN LOCKED COMMERCIAL TESTS ==="
 python -m pytest -q \
   v2/tests/test_start_here_present_v1.py \
