@@ -8,3 +8,5 @@ It is offline, deterministic, and version-locked.
 **Purchase**
 - **Initial License Fee:** $100,000 (one-time; applies to the evaluated artifact version)
 - **Annual Governance Continuity Renewal:** $50,000 (optional; maintains access to newly evaluated releases and continued reliance rights)
+
+Vendor will NOT:
