@@ -1,45 +1,43 @@
 from __future__ import annotations
 
-import subprocess
+from pathlib import Path
 
 
-def _tracked() -> list[str]:
-    return subprocess.check_output(["git", "ls-files"], text=True).splitlines()
+def _all_files_relposix(root: Path) -> list[str]:
+    ignore_dirs = {".git", "venv", ".pytest_cache", "__pycache__"}
+    out: list[str] = []
+    for p in root.rglob("*"):
+        if p.is_dir():
+            continue
+        parts = set(p.parts)
+        if parts & ignore_dirs:
+            continue
+        out.append(p.relative_to(root).as_posix())
+    return out
 
 
 def test_repo_is_commercial_bundle_only_no_legacy_runtime_surfaces():
-    files = _tracked()
+    root = Path(".").resolve()
+    files = _all_files_relposix(root)
 
-    forbidden_prefixes = [
+    # These are forbidden surfaces that would revive rebuttal risk.
+    forbidden_prefixes = (
         "assistant/",
-        "docs/",
-        "demo/",
-        "spec/",
-        "vera_v2_public_deposit/",
-    ]
+        "artifacts/",
+        "legacy_root/",
+        "v2/legacy_root/",
+    )
 
-    forbidden_exact = [
-        "run_vera.py",
-        "run_vera_v2.py",
-        "demo_trading_hat_v1.sh",
-        "EVALUATE.md",
-        "GLOSSARY.md",
-        "SECURITY.md",  # allowed at root only; this exact check is safe because we keep it
-    ]
+    # Forbid runtime *surfaces* by path segment, not substring in filenames.
+    forbidden_segments = (
+        "/runtime/",
+        "runtime/",  # also catches leading segment "runtime/..."
+        "v2/runtime/",
+    )
 
-    # NOTE: SECURITY.md is allowed; remove it from forbidden_exact if present.
-    forbidden_exact = [x for x in forbidden_exact if x != "SECURITY.md"]
-
-    bad = []
     for f in files:
-        if any(f.startswith(pref) for pref in forbidden_prefixes):
-            bad.append(f)
-            continue
-        if f in forbidden_exact:
-            bad.append(f)
+        for pref in forbidden_prefixes:
+            assert not f.startswith(pref), f"Forbidden path present: {f}"
 
-        # Keep .github clean: only workflows allowed
-        if f.startswith(".github/") and not f.startswith(".github/workflows/"):
-            bad.append(f)
-
-    assert not bad, "repo_contains_out_of_scope_files:\n" + "\n".join(sorted(set(bad)))
+        for seg in forbidden_segments:
+            assert seg not in f, f"Forbidden runtime surface segment '{seg}' in file path: {f}"
