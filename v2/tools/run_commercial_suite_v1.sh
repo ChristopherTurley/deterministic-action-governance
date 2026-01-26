@@ -13,11 +13,11 @@ if [ ! -d venv ]; then
   python3 -m venv venv
 fi
 . venv/bin/activate
-python -m pip install -U pip >/dev/null
-python -m pip install -U pytest >/dev/null
+python3 -m pip install -U pip >/dev/null
+python3 -m pip install -U pytest >/dev/null
 export PYTHONPATH="."
 echo "=== 1) RUN LOCKED COMMERCIAL TESTS ==="
-python -m pytest -q \
+python3 -m pytest -q \
   v2/tests/test_start_here_present_v1.py \
   v2/tests/test_repo_commercial_only_lock_v1.py \
   v2/tests/test_repo_root_minimal_lock_v1.py \
