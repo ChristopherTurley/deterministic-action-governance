@@ -1,21 +1,23 @@
-set -eu
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${0}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-cd "${REPO_ROOT}"
-set -euo pipefail
 echo "=== COMMERCIAL SUITE v1 (CI-safe) ==="
+echo "OK: evaluation block started"
 echo "=== 0) LOCAL SETUP (venv + pytest; untracked; idempotent) ==="
+
 if [ ! -d venv ]; then
   python3 -m venv venv
 fi
 . venv/bin/activate
+
 python3 -m pip install -U pip >/dev/null
 python3 -m pip install -U pytest >/dev/null
+
 export PYTHONPATH="."
+
 echo "=== 1) RUN LOCKED COMMERCIAL TESTS ==="
 python3 -m pytest -q \
   v2/tests/test_start_here_present_v1.py \
