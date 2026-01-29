@@ -2,7 +2,7 @@ from pathlib import Path
 
 def test_repo_root_is_minimal_commercial_only():
     root = Path(".")
-    allowed = {"README.md", ".gitignore", "v2", ".github", "LICENSE", "NOTICE"}
+    allowed = {"README.md", ".gitignore", "v2", ".github", "LICENSE", "NOTICE", "COMMERCIAL_NOTICE.md"}
     ignore = {"venv", ".pytest_cache", "__pycache__"}
 
     forbid_paths = [
